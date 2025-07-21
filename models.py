@@ -46,13 +46,10 @@ class Atividade(db.Model):
     data_prevista = db.Column(db.DateTime, nullable=True)
     localizacao = db.Column(db.String(255), nullable=True)
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    responsavel_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    responsavel_nome = db.Column(db.String(100), nullable=True)
     
     # Relationships
     criado_por = db.relationship('User', foreign_keys=[criado_por_id], backref='atividades_criadas')
-    responsavel = db.relationship('User', foreign_keys=[responsavel_id], backref='atividades_responsavel')
 
 def create_user(username, email, password):
     hashed_password = generate_password_hash(password)
@@ -61,7 +58,7 @@ def create_user(username, email, password):
     db.session.commit()
     return user
 
-def create_atividade(descricao, status, prioridade, criado_por_id, data_prevista=None, localizacao=None, responsavel_id=None):
+def create_atividade(descricao, status, prioridade, criado_por_id, data_prevista=None, localizacao=None, responsavel_nome=None):
     """Create a new atividade"""
     # Parse data_prevista if it's a string
     if data_prevista and isinstance(data_prevista, str):
@@ -77,19 +74,18 @@ def create_atividade(descricao, status, prioridade, criado_por_id, data_prevista
         criado_por_id=criado_por_id,
         data_prevista=data_prevista,
         localizacao=localizacao,
-        responsavel_id=responsavel_id if responsavel_id else None
+        responsavel_nome=responsavel_nome if responsavel_nome else None
     )
     db.session.add(atividade)
     db.session.commit()
     return atividade
 
 def get_all_atividades():
-    """Get all atividades with creator and responsible person info"""
+    """Get all atividades with creator info"""
     from sqlalchemy.orm import aliased
     
-    # Create aliases for the User table
+    # Create alias for the User table (only for creator now)
     CriadorUser = aliased(User)
-    ResponsavelUser = aliased(User)
     
     return db.session.query(
         Atividade.id,
@@ -100,11 +96,9 @@ def get_all_atividades():
         Atividade.data_prevista,
         Atividade.localizacao,
         CriadorUser.username.label('criado_por_nome'),
-        ResponsavelUser.username.label('responsavel_nome')
+        Atividade.responsavel_nome
     ).join(
         CriadorUser, Atividade.criado_por_id == CriadorUser.id
-    ).outerjoin(
-        ResponsavelUser, Atividade.responsavel_id == ResponsavelUser.id
     ).all()
 
 def get_user_by_username(username):

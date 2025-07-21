@@ -9,11 +9,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('auth.index') }}">Auth App</a>
+            <a class="navbar-brand" href="{{ url_for('auth.index') }}">Gestor de Tarefas</a>
             <div class="navbar-nav ms-auto">
                 {% if username %}
-                    <span class="navbar-text me-3">Welcome, {{ username }}!</span>
-                    <a class="nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                    <span class="navbar-text me-3">Bem-vindo, {{ username }}!</span>
                     <a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a>
                     <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
@@ -50,17 +49,6 @@
   </div>
   
   <div class="mb-3">
-    <label for="status" class="form-label">Status</label>
-    <select class="form-select" id="status" name="status" required>
-      <option value="">Selecione o status</option>
-      <option value="Pendente" selected>Pendente</option>
-      <option value="Em andamento">Em andamento</option>
-      <option value="Concluída">Concluída</option>
-      <option value="Cancelada">Cancelada</option>
-    </select>
-  </div>
-  
-  <div class="mb-3">
     <label for="prioridade" class="form-label">Prioridade</label>
     <select class="form-select" id="prioridade" name="prioridade" required>
       <option value="">Selecione a prioridade</option>
@@ -83,18 +71,9 @@
   </div>
   
   <div class="mb-3">
-    <label for="responsavel_id" class="form-label">Responsável</label>
-    <select class="form-select" id="responsavel_id" name="responsavel_id">
-      <option value="">Selecione um responsável</option>
-      <!-- This would be populated with users from your database -->
-      <option value="1">João Silva</option>
-      <option value="2">Maria Santos</option>
-      <option value="3">Ana Costa</option>
-      <option value="4">Pedro Oliveira</option>
-      <option value="5">Carlos Lima</option>
-      <option value="6">Lucia Ferreira</option>
-    </select>
-    <small class="form-text text-muted">Pessoa responsável por executar a atividade (opcional).</small>
+    <label for="responsavel_nome" class="form-label">Responsável</label>
+    <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" placeholder="Ex: João Silva, Maria Santos">
+    <small class="form-text text-muted">Nome da pessoa responsável por executar a atividade (opcional).</small>
   </div>
   
   <div class="d-grid gap-2 d-md-flex justify-content-md-end">

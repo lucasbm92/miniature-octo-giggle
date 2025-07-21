@@ -3,7 +3,7 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import (get_user_by_username, get_user_by_email, create_user, 
                    get_user_by_reset_token, update_user_password, create_atividade, 
-                   get_all_atividades, db)
+                   get_all_atividades, Atividade, db)
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -85,27 +85,25 @@ def new_task():
     if request.method == 'POST':
         # Get form data
         descricao = request.form['descricao']
-        status = request.form['status']
         prioridade = request.form['prioridade']
         data_prevista = request.form.get('data_prevista')
         localizacao = request.form.get('localizacao')
-        responsavel_id = request.form.get('responsavel_id')
+        responsavel_nome = request.form.get('responsavel_nome')
         
         # Basic validation
-        if not descricao or not status or not prioridade:
-            flash('Descrição, Status e Prioridade são obrigatórios')
+        if not descricao or not prioridade:
+            flash('Descrição e Prioridade são obrigatórios')
             return redirect(url_for('auth.new_task'))
         
         try:
-            # Save to database
             create_atividade(
                 descricao=descricao,
-                status=status,
+                status='Pendente',
                 prioridade=prioridade,
                 criado_por_id=session['user_id'],
                 data_prevista=data_prevista if data_prevista else None,
                 localizacao=localizacao if localizacao else None,
-                responsavel_id=int(responsavel_id) if responsavel_id else None
+                responsavel_nome=responsavel_nome.strip() if responsavel_nome else None
             )
             flash('Atividade criada com sucesso!')
             return redirect(url_for('auth.index'))
@@ -114,6 +112,53 @@ def new_task():
             return redirect(url_for('auth.new_task'))
     
     return render_template('newtask.html', username=session.get('username'))
+
+@auth_blueprint.route('/update-status/<int:atividade_id>/<new_status>')
+def update_status(atividade_id, new_status):
+    if 'user_id' not in session:
+        flash('Please log in to access this page')
+        return redirect(url_for('auth.login'))
+    
+    try:
+        # Get the atividade from database
+        atividade = Atividade.query.get_or_404(atividade_id)
+        
+        # Update the status
+        atividade.status = new_status
+        db.session.commit()
+        
+        flash(f'Status da atividade atualizado para "{new_status}" com sucesso!')
+        
+    except Exception as e:
+        flash(f'Erro ao atualizar status: {str(e)}')
+    
+    return redirect(url_for('auth.index'))
+
+@auth_blueprint.route('/delete-atividade/<int:atividade_id>')
+def delete_atividade(atividade_id):
+    if 'user_id' not in session:
+        flash('Please log in to access this page')
+        return redirect(url_for('auth.login'))
+    
+    try:
+        # Get the atividade from database
+        atividade = Atividade.query.get_or_404(atividade_id)
+        
+        # Check if the current user is the creator (optional security check)
+        if atividade.criado_por_id != session['user_id']:
+            flash('Você só pode excluir atividades que você criou')
+            return redirect(url_for('auth.index'))
+        
+        # Delete the atividade
+        db.session.delete(atividade)
+        db.session.commit()
+        
+        flash('Atividade excluída com sucesso!')
+        
+    except Exception as e:
+        flash(f'Erro ao excluir atividade: {str(e)}')
+    
+    return redirect(url_for('auth.index'))
 
 @auth_blueprint.route('/change-password', methods=['GET', 'POST'])
 def change_password():

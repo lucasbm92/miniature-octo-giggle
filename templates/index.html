@@ -9,11 +9,10 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="{{ url_for('auth.index') }}">Auth App</a>
+            <a class="navbar-brand" href="{{ url_for('auth.index') }}">Gestor de Tarefas</a>
             <div class="navbar-nav ms-auto">
                 {% if username %}
-                    <span class="navbar-text me-3">Welcome, {{ username }}!</span>
-                    <a class="nav-link" href="{{ url_for('auth.dashboard') }}">Dashboard</a>
+                    <span class="navbar-text me-3">Bem-vindo, {{ username }}!</span>
                     <a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a>
                     <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
@@ -85,12 +84,14 @@
                         <td>{{ atividade.criado_por_nome }}</td>
                         <td>{{ atividade.responsavel_nome or 'Não atribuído' }}</td>
                         <td>
-                            <a href="#" class="btn btn-sm btn-primary">Editar</a>
-                            {% if atividade.status != 'Concluída' %}
-                                <a href="#" class="btn btn-sm btn-success">Concluir</a>
-                            {% else %}
-                                <a href="#" class="btn btn-sm btn-secondary">Visualizar</a>
+                            {% if atividade.status == 'Pendente' %}
+                                <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Em andamento') }}" class="btn btn-sm btn-primary">Iniciar</a>
+                            {% elif atividade.status == 'Em andamento' %}
+                                <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Concluída') }}" class="btn btn-sm btn-success">Concluir</a>
+                            {% elif atividade.status == 'Concluída' %}
+                                <a href="#" class="btn btn-sm btn-secondary disabled">Concluída</a>
                             {% endif %}
+                            <a href="{{ url_for('auth.delete_atividade', atividade_id=atividade.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')">Excluir</a>
                         </td>
                     </tr>
                 {% endfor %}

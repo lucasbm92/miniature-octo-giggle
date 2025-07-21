@@ -11,13 +11,39 @@ def migrate_database():
             port=3306,
             user='lucasbm92',
             password='lbm291292',
-            database='auth_system_db',
+            database='miniature_octo_giggle',
             connect_timeout=5
         )
         
         print("✅ Connected to database")
         
         cursor = connection.cursor()
+        
+        # Check if user table exists, create if it doesn't
+        cursor.execute("SHOW TABLES LIKE 'user';")
+        user_table_exists = cursor.fetchone()
+        
+        if not user_table_exists:
+            print("Creating user table...")
+            create_user_table = """
+            CREATE TABLE user (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(150) UNIQUE NOT NULL,
+                email VARCHAR(150) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                reset_token VARCHAR(100) NULL,
+                reset_token_expiry DATETIME NULL,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            )
+            """
+            try:
+                cursor.execute(create_user_table)
+                print("✅ Created user table successfully!")
+            except Exception as e:
+                print(f"❌ Error creating user table: {e}")
+                return
+        else:
+            print("✅ User table already exists")
         
         # Check current table structure
         cursor.execute("DESCRIBE user;")
@@ -72,11 +98,10 @@ def migrate_database():
                 data_prevista DATETIME NULL,
                 localizacao VARCHAR(255) NULL,
                 criado_por_id INT NOT NULL,
-                responsavel_id INT NULL,
+                responsavel_nome VARCHAR(100) NULL,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                FOREIGN KEY (criado_por_id) REFERENCES user(id) ON DELETE CASCADE,
-                FOREIGN KEY (responsavel_id) REFERENCES user(id) ON DELETE SET NULL
+                FOREIGN KEY (criado_por_id) REFERENCES user(id) ON DELETE CASCADE
             )
             """
             try:
@@ -86,6 +111,41 @@ def migrate_database():
                 print(f"❌ Error creating atividades table: {e}")
         else:
             print("✅ Atividades table already exists")
+            # Check if we need to update the responsavel field
+            cursor.execute("SHOW COLUMNS FROM atividades LIKE 'responsavel_id';")
+            responsavel_id_exists = cursor.fetchone()
+            cursor.execute("SHOW COLUMNS FROM atividades LIKE 'responsavel_nome';")
+            responsavel_nome_exists = cursor.fetchone()
+            
+            if responsavel_id_exists and not responsavel_nome_exists:
+                print("Updating atividades table structure - changing responsavel from ID to nome...")
+                try:
+                    # Add the new column
+                    cursor.execute("ALTER TABLE atividades ADD COLUMN responsavel_nome VARCHAR(100) NULL;")
+                    print("✅ Added responsavel_nome column")
+                    
+                    # Migrate existing data (copy usernames from responsavel relationship)
+                    migrate_responsavel_data = """
+                    UPDATE atividades a 
+                    LEFT JOIN user u ON a.responsavel_id = u.id 
+                    SET a.responsavel_nome = u.username 
+                    WHERE a.responsavel_id IS NOT NULL;
+                    """
+                    cursor.execute(migrate_responsavel_data)
+                    print("✅ Migrated existing responsavel data")
+                    
+                    # Drop the foreign key constraint first
+                    cursor.execute("ALTER TABLE atividades DROP FOREIGN KEY atividades_ibfk_2;")
+                    print("✅ Dropped foreign key constraint")
+                    
+                    # Drop the old column
+                    cursor.execute("ALTER TABLE atividades DROP COLUMN responsavel_id;")
+                    print("✅ Dropped responsavel_id column")
+                    
+                except Exception as e:
+                    print(f"❌ Error updating atividades table: {e}")
+            elif responsavel_nome_exists:
+                print("✅ Atividades table already has responsavel_nome field")
         
         connection.commit()
         print("✅ Database migration completed successfully!")
