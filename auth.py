@@ -2,7 +2,8 @@ from flask import Blueprint, request, render_template, redirect, url_for, sessio
 from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import (get_user_by_username, get_user_by_email, create_user, 
-                   get_user_by_reset_token, update_user_password, create_atividade, db)
+                   get_user_by_reset_token, update_user_password, create_atividade, 
+                   get_all_atividades, db)
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -69,7 +70,11 @@ def index():
     if 'user_id' not in session:
         flash('Please log in to access this page')
         return redirect(url_for('auth.login'))
-    return render_template('index.html', username=session.get('username'))
+    
+    # Get all atividades from database
+    atividades = get_all_atividades()
+    
+    return render_template('index.html', username=session.get('username'), atividades=atividades)
 
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():

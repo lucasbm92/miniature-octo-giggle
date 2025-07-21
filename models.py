@@ -83,6 +83,30 @@ def create_atividade(descricao, status, prioridade, criado_por_id, data_prevista
     db.session.commit()
     return atividade
 
+def get_all_atividades():
+    """Get all atividades with creator and responsible person info"""
+    from sqlalchemy.orm import aliased
+    
+    # Create aliases for the User table
+    CriadorUser = aliased(User)
+    ResponsavelUser = aliased(User)
+    
+    return db.session.query(
+        Atividade.id,
+        Atividade.descricao,
+        Atividade.status,
+        Atividade.prioridade,
+        Atividade.data_criada,
+        Atividade.data_prevista,
+        Atividade.localizacao,
+        CriadorUser.username.label('criado_por_nome'),
+        ResponsavelUser.username.label('responsavel_nome')
+    ).join(
+        CriadorUser, Atividade.criado_por_id == CriadorUser.id
+    ).outerjoin(
+        ResponsavelUser, Atividade.responsavel_id == ResponsavelUser.id
+    ).all()
+
 def get_user_by_username(username):
     return User.query.filter_by(username=username).first()
 

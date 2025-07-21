@@ -53,47 +53,55 @@
             </tr>
         </thead>
         <tbody>
-            <tr>
-            <td>Exemplo de tarefa 1</td>
-            <td><span class="badge bg-warning">Em andamento</span></td>
-            <td><span class="badge bg-danger">Alta</span></td>
-            <td>15/07/2025</td>
-            <td>25/07/2025</td>
-            <td>Escritório Central</td>
-            <td>João Silva</td>
-            <td>Maria Santos</td>
-            <td>
-                <button class="btn btn-sm btn-primary">Editar</button>
-                <button class="btn btn-sm btn-success">Concluir</button>
-            </td>
-            </tr>
-            <tr>
-            <td>Exemplo de tarefa 2</td>
-            <td><span class="badge bg-success">Concluída</span></td>
-            <td><span class="badge bg-info">Média</span></td>
-            <td>10/07/2025</td>
-            <td>20/07/2025</td>
-            <td>Filial Norte</td>
-            <td>Ana Costa</td>
-            <td>Pedro Oliveira</td>
-            <td>
-                <button class="btn btn-sm btn-secondary">Visualizar</button>
-            </td>
-            </tr>
-            <tr>
-            <td>Exemplo de tarefa 3</td>
-            <td><span class="badge bg-primary">Pendente</span></td>
-            <td><span class="badge bg-success">Baixa</span></td>
-            <td>20/07/2025</td>
-            <td>30/07/2025</td>
-            <td>Home Office</td>
-            <td>Carlos Lima</td>
-            <td>Lucia Ferreira</td>
-            <td>
-                <button class="btn btn-sm btn-primary">Editar</button>
-                <button class="btn btn-sm btn-warning">Iniciar</button>
-            </td>
-            </tr>
+            {% if atividades %}
+                {% for atividade in atividades %}
+                    <tr>
+                        <td>{{ atividade.descricao }}</td>
+                        <td>
+                            {% if atividade.status == 'Pendente' %}
+                                <span class="badge bg-primary">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Em andamento' %}
+                                <span class="badge bg-warning">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Concluída' %}
+                                <span class="badge bg-success">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Cancelada' %}
+                                <span class="badge bg-danger">{{ atividade.status }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if atividade.prioridade == 'Baixa' %}
+                                <span class="badge bg-success">{{ atividade.prioridade }}</span>
+                            {% elif atividade.prioridade == 'Média' %}
+                                <span class="badge bg-info">{{ atividade.prioridade }}</span>
+                            {% elif atividade.prioridade == 'Alta' %}
+                                <span class="badge bg-warning">{{ atividade.prioridade }}</span>
+                            {% elif atividade.prioridade == 'Crítica' %}
+                                <span class="badge bg-danger">{{ atividade.prioridade }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ atividade.data_criada.strftime('%d/%m/%Y') if atividade.data_criada else '' }}</td>
+                        <td>{{ atividade.data_prevista.strftime('%d/%m/%Y') if atividade.data_prevista else 'Não definida' }}</td>
+                        <td>{{ atividade.localizacao or 'Não especificada' }}</td>
+                        <td>{{ atividade.criado_por_nome }}</td>
+                        <td>{{ atividade.responsavel_nome or 'Não atribuído' }}</td>
+                        <td>
+                            <a href="#" class="btn btn-sm btn-primary">Editar</a>
+                            {% if atividade.status != 'Concluída' %}
+                                <a href="#" class="btn btn-sm btn-success">Concluir</a>
+                            {% else %}
+                                <a href="#" class="btn btn-sm btn-secondary">Visualizar</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            {% else %}
+                <tr>
+                    <td colspan="9" class="text-center text-muted">
+                        <p class="my-3">Nenhuma atividade encontrada.</p>
+                        <a href="{{ url_for('auth.new_task') }}" class="btn btn-primary">Criar primeira atividade</a>
+                    </td>
+                </tr>
+            {% endif %}
         </tbody>
 </table>
 
