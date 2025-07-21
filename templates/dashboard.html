@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+    <style>
+        .flash-messages { color: red; margin: 10px 0; }
+        .success { color: green; }
+        .dashboard-content { 
+            max-width: 800px; 
+            margin: 0 auto; 
+            padding: 20px; 
+        }
+        .user-info { 
+            background-color: #f8f9fa; 
+            padding: 15px; 
+            border-radius: 5px; 
+            margin-bottom: 20px; 
+        }
+        .actions { margin-top: 20px; }
+        .actions a { 
+            display: inline-block; 
+            margin: 5px 10px 5px 0; 
+            padding: 10px 15px; 
+            background-color: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 3px; 
+        }
+        .actions a:hover { background-color: #0056b3; }
+        .logout { background-color: #dc3545 !important; }
+        .logout:hover { background-color: #c82333 !important; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-content">
+        <h2>Dashboard</h2>
+        
+        <!-- Display flash messages -->
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <div class="flash-messages">
+                    {% for message in messages %}
+                        <div>{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        
+        <div class="user-info">
+            <h3>Welcome, {{ username }}!</h3>
+            <p>You are successfully logged in to your account.</p>
+        </div>
+        
+        <div class="actions">
+            <a href="/auth/change-password">Change Password</a>
+            <a href="/auth/logout" class="logout">Logout</a>
+        </div>
+    </div>
+</body>
+</html>
