@@ -43,7 +43,7 @@ class Atividade(db.Model):
     status = db.Column(db.Enum('Pendente', 'Em andamento', 'Concluída', 'Cancelada', name='status_enum'), default='Pendente')
     prioridade = db.Column(db.Enum('Baixa', 'Média', 'Alta', 'Crítica', name='prioridade_enum'), default='Média')
     data_criada = db.Column(db.DateTime, default=datetime.utcnow)
-    data_prevista = db.Column(db.DateTime, nullable=True)
+    prazo = db.Column(db.DateTime, nullable=True)
     localizacao = db.Column(db.String(255), nullable=True)
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     responsavel_nome = db.Column(db.String(100), nullable=True)
@@ -58,21 +58,21 @@ def create_user(username, email, password):
     db.session.commit()
     return user
 
-def create_atividade(descricao, status, prioridade, criado_por_id, data_prevista=None, localizacao=None, responsavel_nome=None):
+def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, localizacao=None, responsavel_nome=None):
     """Create a new atividade"""
-    # Parse data_prevista if it's a string
-    if data_prevista and isinstance(data_prevista, str):
+    # Parse prazo if it's a string
+    if prazo and isinstance(prazo, str):
         try:
-            data_prevista = datetime.fromisoformat(data_prevista.replace('T', ' '))
+            prazo = datetime.fromisoformat(prazo.replace('T', ' '))
         except ValueError:
-            data_prevista = None
+            prazo = None
     
     atividade = Atividade(
         descricao=descricao,
         status=status,
         prioridade=prioridade,
         criado_por_id=criado_por_id,
-        data_prevista=data_prevista,
+        prazo=prazo,
         localizacao=localizacao,
         responsavel_nome=responsavel_nome if responsavel_nome else None
     )
@@ -93,13 +93,13 @@ def get_all_atividades():
         Atividade.status,
         Atividade.prioridade,
         Atividade.data_criada,
-        Atividade.data_prevista,
+        Atividade.prazo,
         Atividade.localizacao,
         CriadorUser.username.label('criado_por_nome'),
         Atividade.responsavel_nome
     ).join(
         CriadorUser, Atividade.criado_por_id == CriadorUser.id
-    ).all()
+    ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
 
 def get_user_by_username(username):
     return User.query.filter_by(username=username).first()

@@ -95,7 +95,7 @@ def migrate_database():
                 status ENUM('Pendente', 'Em andamento', 'Concluída', 'Cancelada') DEFAULT 'Pendente',
                 prioridade ENUM('Baixa', 'Média', 'Alta', 'Crítica') DEFAULT 'Média',
                 data_criada DATETIME DEFAULT CURRENT_TIMESTAMP,
-                data_prevista DATETIME NULL,
+                prazo DATETIME NULL,
                 localizacao VARCHAR(255) NULL,
                 criado_por_id INT NOT NULL,
                 responsavel_nome VARCHAR(100) NULL,
@@ -146,6 +146,22 @@ def migrate_database():
                     print(f"❌ Error updating atividades table: {e}")
             elif responsavel_nome_exists:
                 print("✅ Atividades table already has responsavel_nome field")
+            
+            # Check if we need to rename data_prevista to prazo
+            cursor.execute("SHOW COLUMNS FROM atividades LIKE 'data_prevista';")
+            data_prevista_exists = cursor.fetchone()
+            cursor.execute("SHOW COLUMNS FROM atividades LIKE 'prazo';")
+            prazo_exists = cursor.fetchone()
+            
+            if data_prevista_exists and not prazo_exists:
+                print("Updating atividades table structure - renaming data_prevista to prazo...")
+                try:
+                    cursor.execute("ALTER TABLE atividades CHANGE COLUMN data_prevista prazo DATETIME NULL;")
+                    print("✅ Renamed data_prevista column to prazo")
+                except Exception as e:
+                    print(f"❌ Error renaming data_prevista to prazo: {e}")
+            elif prazo_exists:
+                print("✅ Atividades table already has prazo field")
         
         connection.commit()
         print("✅ Database migration completed successfully!")

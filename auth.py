@@ -58,17 +58,10 @@ def logout():
     flash('Logged out successfully!')
     return redirect(url_for('auth.login'))
 
-@auth_blueprint.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        flash('Please log in to access this page')
-        return redirect(url_for('auth.login'))
-    return render_template('dashboard.html', username=session.get('username'))
-
 @auth_blueprint.route('/')
 def index():
     if 'user_id' not in session:
-        flash('Please log in to access this page')
+        flash('Por favor, faça login para acessar esta página')
         return redirect(url_for('auth.login'))
     
     # Get all atividades from database
@@ -79,14 +72,14 @@ def index():
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():
     if 'user_id' not in session:
-        flash('Please log in to access this page')
+        flash('Por favor, faça login para acessar esta página')
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
         # Get form data
         descricao = request.form['descricao']
         prioridade = request.form['prioridade']
-        data_prevista = request.form.get('data_prevista')
+        prazo = request.form.get('prazo')
         localizacao = request.form.get('localizacao')
         responsavel_nome = request.form.get('responsavel_nome')
         
@@ -96,12 +89,22 @@ def new_task():
             return redirect(url_for('auth.new_task'))
         
         try:
+            from datetime import datetime, timedelta
+            if prioridade == 'Baixa':
+                prazo_value = datetime.now() + timedelta(days=15)
+            elif prioridade == 'Média':
+                prazo_value = datetime.now() + timedelta(days=10)
+            elif prioridade == 'Alta':
+                prazo_value = datetime.now() + timedelta(days=5)
+            else:
+                prazo_value = datetime.now() + timedelta(days=2)
+
             create_atividade(
                 descricao=descricao,
                 status='Pendente',
                 prioridade=prioridade,
+                prazo=prazo_value,
                 criado_por_id=session['user_id'],
-                data_prevista=data_prevista if data_prevista else None,
                 localizacao=localizacao if localizacao else None,
                 responsavel_nome=responsavel_nome.strip() if responsavel_nome else None
             )
@@ -116,7 +119,7 @@ def new_task():
 @auth_blueprint.route('/update-status/<int:atividade_id>/<new_status>')
 def update_status(atividade_id, new_status):
     if 'user_id' not in session:
-        flash('Please log in to access this page')
+        flash('Por favor, faça login para acessar esta página')
         return redirect(url_for('auth.login'))
     
     try:
@@ -137,7 +140,7 @@ def update_status(atividade_id, new_status):
 @auth_blueprint.route('/delete-atividade/<int:atividade_id>')
 def delete_atividade(atividade_id):
     if 'user_id' not in session:
-        flash('Please log in to access this page')
+        flash('Por favor, faça login para acessar esta página')
         return redirect(url_for('auth.login'))
     
     try:
@@ -163,7 +166,7 @@ def delete_atividade(atividade_id):
 @auth_blueprint.route('/change-password', methods=['GET', 'POST'])
 def change_password():
     if 'user_id' not in session:
-        flash('Please log in to access this page')
+        flash('Por favor, faça login para acessar esta página')
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
@@ -200,9 +203,9 @@ def forgot_password():
         if user:
             token = user.generate_reset_token()
             send_reset_email(user.email, token)
-            flash('Password reset instructions have been sent to your email.')
+            flash('Instruções de redefinição de senha foram enviadas para seu email.')
         else:
-            flash('Email address not found.')
+            flash('Endereço de email não encontrado.')
         
         return redirect(url_for('auth.login'))
     

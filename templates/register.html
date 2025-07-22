@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Register</title>
+    <title>Cadastro</title>
     <style>
         .flash-messages { color: red; margin: 10px 0; }
         .success { color: green; }
@@ -23,7 +23,7 @@
     </style>
 </head>
 <body>
-    <h2>Register</h2>
+    <h2>Cadastro</h2>
     
     <!-- Display flash messages -->
     {% with messages = get_flashed_messages() %}
@@ -38,7 +38,7 @@
     
     <form method="post">
         <div class="form-group">
-            <label>Username:</label>
+            <label>Usuário:</label>
             <input type="text" name="username" required>
         </div>
         
@@ -48,18 +48,18 @@
         </div>
         
         <div class="form-group">
-            <label>Password:</label>
+            <label>Senha:</label>
             <input type="password" name="password" required>
         </div>
         
         <div class="form-group">
-            <label>Confirm Password:</label>
+            <label>Confirmar Senha:</label>
             <input type="password" name="confirm_password" required>
         </div>
         
-        <button type="submit">Register</button>
+        <button type="submit">Registrar</button>
     </form>
     <br>
-    <a href="/auth/login">Already have an account? Login</a>
+    <a href="/login">Já tem uma conta? Faça login</a>
 </body>
 </html>

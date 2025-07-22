@@ -40,13 +40,13 @@
         <thead>
             <tr>
                 <th scope="col">Descrição</th>
-                <th scope="col">Status</th>
-                <th scope="col">Prioridade</th>
-                <th scope="col">Data criada</th>
-                <th scope="col">Data prevista</th>
                 <th scope="col">Localização</th>
                 <th scope="col">Criado por</th>
                 <th scope="col">Responsável</th>
+                <th scope="col">Prioridade</th>
+                <th scope="col">Data criada</th>
+                <th scope="col">Prazo</th>
+                <th scope="col">Status</th>
                 <th scope="col">Ações</th>
                 <th scope="col"><a href="{{ url_for('auth.new_task') }}" class="btn btn-primary btn-sm">+</a></th>
             </tr>
@@ -56,17 +56,9 @@
                 {% for atividade in atividades %}
                     <tr>
                         <td>{{ atividade.descricao }}</td>
-                        <td>
-                            {% if atividade.status == 'Pendente' %}
-                                <span class="badge bg-primary">{{ atividade.status }}</span>
-                            {% elif atividade.status == 'Em andamento' %}
-                                <span class="badge bg-warning">{{ atividade.status }}</span>
-                            {% elif atividade.status == 'Concluída' %}
-                                <span class="badge bg-success">{{ atividade.status }}</span>
-                            {% elif atividade.status == 'Cancelada' %}
-                                <span class="badge bg-danger">{{ atividade.status }}</span>
-                            {% endif %}
-                        </td>
+                        <td>{{ atividade.localizacao or 'Não especificada' }}</td>
+                        <td>{{ atividade.criado_por_nome }}</td>
+                        <td>{{ atividade.responsavel_nome or 'Não atribuído' }}</td>
                         <td>
                             {% if atividade.prioridade == 'Baixa' %}
                                 <span class="badge bg-success">{{ atividade.prioridade }}</span>
@@ -79,10 +71,18 @@
                             {% endif %}
                         </td>
                         <td>{{ atividade.data_criada.strftime('%d/%m/%Y') if atividade.data_criada else '' }}</td>
-                        <td>{{ atividade.data_prevista.strftime('%d/%m/%Y') if atividade.data_prevista else 'Não definida' }}</td>
-                        <td>{{ atividade.localizacao or 'Não especificada' }}</td>
-                        <td>{{ atividade.criado_por_nome }}</td>
-                        <td>{{ atividade.responsavel_nome or 'Não atribuído' }}</td>
+                        <td>{{ atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definida' }}</td>
+                        <td>
+                            {% if atividade.status == 'Pendente' %}
+                                <span class="badge bg-primary">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Em andamento' %}
+                                <span class="badge bg-warning">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Concluída' %}
+                                <span class="badge bg-success">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Cancelada' %}
+                                <span class="badge bg-danger">{{ atividade.status }}</span>
+                            {% endif %}
+                        </td>
                         <td>
                             {% if atividade.status == 'Pendente' %}
                                 <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Em andamento') }}" class="btn btn-sm btn-primary">Iniciar</a>
@@ -97,7 +97,7 @@
                 {% endfor %}
             {% else %}
                 <tr>
-                    <td colspan="9" class="text-center text-muted">
+                    <td colspan="10" class="text-center text-muted">
                         <p class="my-3">Nenhuma atividade encontrada.</p>
                         <a href="{{ url_for('auth.new_task') }}" class="btn btn-primary">Criar primeira atividade</a>
                     </td>
