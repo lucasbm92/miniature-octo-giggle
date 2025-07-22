@@ -74,9 +74,9 @@
                         <td>{{ atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definida' }}</td>
                         <td>
                             {% if atividade.status == 'Pendente' %}
-                                <span class="badge bg-primary">{{ atividade.status }}</span>
-                            {% elif atividade.status == 'Em andamento' %}
                                 <span class="badge bg-warning">{{ atividade.status }}</span>
+                            {% elif atividade.status == 'Em andamento' %}
+                                <span class="badge bg-primary">{{ atividade.status }}</span>
                             {% elif atividade.status == 'Concluída' %}
                                 <span class="badge bg-success">{{ atividade.status }}</span>
                             {% elif atividade.status == 'Cancelada' %}
