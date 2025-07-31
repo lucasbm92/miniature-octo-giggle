@@ -1,1 +1,2 @@
 # miniature-octo-giggle
+A Flask-based task management web application that provides user authentication and activity tracking capabilities. The application features a complete user management system with registration, login, password reset functionality, and a comprehensive task management interface.
