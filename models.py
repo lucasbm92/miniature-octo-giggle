@@ -1,7 +1,9 @@
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
+from flask import escape
 from datetime import datetime, timedelta
 import secrets
+import re
 
 db = SQLAlchemy()
 
@@ -118,4 +120,29 @@ def update_user_password(user, new_password):
 def init_db(app):
     with app.app_context():
         db.create_all()
-        print('Database initialized.')
+
+# Input validation functions
+def validate_username(username):
+    """Validate username format and length"""
+    if not username or len(username) < 3 or len(username) > 50:
+        return False
+    return re.match(r'^[a-zA-Z0-9_]+$', username) is not None
+
+def validate_email(email):
+    """Validate email format"""
+    if not email or len(email) > 150:
+        return False
+    pattern = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
+    return re.match(pattern, email) is not None
+
+def validate_password(password):
+    """Validate password strength"""
+    if not password or len(password) < 6:
+        return False
+    return True
+
+def sanitize_input(text):
+    """Sanitize text input"""
+    if text:
+        return escape(text.strip())
+    return None
