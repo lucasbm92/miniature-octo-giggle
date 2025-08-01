@@ -106,3 +106,5 @@ poetry.lock
 
 # Windows
 Thumbs.db
+
+DEPLOYMENT.md

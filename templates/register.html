@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Cadastro</title>
+    <title>Cadastro - Gestor de Tarefas</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        .flash-messages { color: red; margin: 10px 0; }
-        .success { color: green; }
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; }
         input[type="text"], input[type="email"], input[type="password"] { 
@@ -26,13 +25,24 @@
     <h2>Cadastro</h2>
     
     <!-- Display flash messages -->
-    {% with messages = get_flashed_messages() %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
-            <div class="flash-messages">
-                {% for message in messages %}
-                    <div>{{ message }}</div>
-                {% endfor %}
-            </div>
+            {% for category, message in messages %}
+                {% if category == 'error' %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% elif category == 'success' %}
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                {% elif category == 'warning' %}
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                {% elif category == 'info' %}
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                {% else %}
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
         {% endif %}
     {% endwith %}
     
@@ -40,11 +50,13 @@
         <div class="form-group">
             <label>Usuário:</label>
             <input type="text" name="username" required>
+            <small class="form-text text-muted">Nome de exibição (não usado para login)</small>
         </div>
         
         <div class="form-group">
             <label>Email:</label>
             <input type="email" name="email" required>
+            <small class="form-text text-muted">Use este e-mail para fazer login</small>
         </div>
         
         <div class="form-group">
@@ -61,5 +73,7 @@
     </form>
     <br>
     <a href="/login">Já tem uma conta? Faça login</a>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

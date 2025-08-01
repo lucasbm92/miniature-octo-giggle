@@ -46,7 +46,8 @@ class Atividade(db.Model):
     prioridade = db.Column(db.Enum('Baixa', 'Média', 'Alta', 'Crítica', name='prioridade_enum'), default='Média')
     data_criada = db.Column(db.DateTime, default=datetime.utcnow)
     prazo = db.Column(db.DateTime, nullable=True)
-    localizacao = db.Column(db.String(255), nullable=True)
+    local = db.Column(db.String(255), nullable=False)
+    setor = db.Column(db.String(100), nullable=True)
     criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     responsavel_nome = db.Column(db.String(100), nullable=True)
     
@@ -60,7 +61,7 @@ def create_user(username, email, password):
     db.session.commit()
     return user
 
-def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, localizacao=None, responsavel_nome=None):
+def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, local=None, setor=None, responsavel_nome=None):
     """Create a new atividade"""
     # Parse prazo if it's a string
     if prazo and isinstance(prazo, str):
@@ -75,7 +76,8 @@ def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, l
         prioridade=prioridade,
         criado_por_id=criado_por_id,
         prazo=prazo,
-        localizacao=localizacao,
+        local=local,
+        setor=setor if setor else None,
         responsavel_nome=responsavel_nome if responsavel_nome else None
     )
     db.session.add(atividade)
@@ -96,7 +98,8 @@ def get_all_atividades():
         Atividade.prioridade,
         Atividade.data_criada,
         Atividade.prazo,
-        Atividade.localizacao,
+        Atividade.local,
+        Atividade.setor,
         CriadorUser.username.label('criado_por_nome'),
         Atividade.responsavel_nome
     ).join(

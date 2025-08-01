@@ -12,6 +12,10 @@ mail = Mail()
 
 @auth_blueprint.route('/register', methods=['GET', 'POST'])
 def register():
+    # Redirect logged-in users to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('auth.index'))
+    
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
@@ -20,34 +24,39 @@ def register():
         
         # Validation
         if password != confirm_password:
-            flash('Passwords do not match')
+            flash('As senhas não coincidem', 'error')
             return redirect(url_for('auth.register'))
         
         if get_user_by_username(username):
-            flash('Username already exists')
+            flash('Nome de usuário já existe', 'error')
             return redirect(url_for('auth.register'))
         
         if get_user_by_email(email):
-            flash('Email already exists')
+            flash('Email já está cadastrado', 'error')
             return redirect(url_for('auth.register'))
         
         create_user(username, email, password)
-        flash('Registration successful! Please log in.')
+        flash('Cadastro realizado com sucesso! Faça o login.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('register.html')
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
+    # Redirect logged-in users to dashboard
+    if 'user_id' in session:
+        return redirect(url_for('auth.index'))
+    
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        user = get_user_by_username(username)
+        user = get_user_by_email(email)
         if user and check_password_hash(user.password, password):
             session['user_id'] = user.id
             session['username'] = user.username
-            flash('Logged in successfully!')
+            session['email'] = user.email
+            flash('Login realizado com sucesso!', 'success')
             return redirect(url_for('auth.index'))
-        flash('Invalid credentials')
+        flash('Credenciais inválidas', 'error')
         return redirect(url_for('auth.login'))
     return render_template('login.html')
 
@@ -55,13 +64,14 @@ def login():
 def logout():
     session.pop('user_id', None)
     session.pop('username', None)
-    flash('Logged out successfully!')
+    session.pop('email', None)
+    flash('Logout realizado com sucesso!', 'success')
     return redirect(url_for('auth.login'))
 
 @auth_blueprint.route('/')
 def index():
     if 'user_id' not in session:
-        flash('Por favor, faça login para acessar esta página')
+        flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
     # Get all atividades from database
@@ -72,7 +82,7 @@ def index():
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():
     if 'user_id' not in session:
-        flash('Por favor, faça login para acessar esta página')
+        flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
@@ -80,12 +90,13 @@ def new_task():
         descricao = request.form['descricao']
         prioridade = request.form['prioridade']
         prazo = request.form.get('prazo')
-        localizacao = request.form.get('localizacao')
+        local = request.form.get('local')
+        setor = request.form.get('setor')
         responsavel_nome = request.form.get('responsavel_nome')
         
         # Basic validation
-        if not descricao or not prioridade:
-            flash('Descrição e Prioridade são obrigatórios')
+        if not descricao or not prioridade or not local:
+            flash('Descrição, Prioridade e Local são obrigatórios', 'warning')
             return redirect(url_for('auth.new_task'))
         
         try:
@@ -105,13 +116,14 @@ def new_task():
                 prioridade=prioridade,
                 prazo=prazo_value,
                 criado_por_id=session['user_id'],
-                localizacao=localizacao if localizacao else None,
+                local=local.strip() if local else None,
+                setor=setor.strip() if setor else None,
                 responsavel_nome=responsavel_nome.strip() if responsavel_nome else None
             )
-            flash('Atividade criada com sucesso!')
+            flash('Atividade criada com sucesso!', 'success')
             return redirect(url_for('auth.index'))
         except Exception as e:
-            flash(f'Erro ao criar atividade: {str(e)}')
+            flash(f'Erro ao criar atividade: {str(e)}', 'error')
             return redirect(url_for('auth.new_task'))
     
     return render_template('newtask.html', username=session.get('username'))
@@ -119,7 +131,7 @@ def new_task():
 @auth_blueprint.route('/update-status/<int:atividade_id>/<new_status>')
 def update_status(atividade_id, new_status):
     if 'user_id' not in session:
-        flash('Por favor, faça login para acessar esta página')
+        flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
     try:
@@ -130,17 +142,17 @@ def update_status(atividade_id, new_status):
         atividade.status = new_status
         db.session.commit()
         
-        flash(f'Status da atividade atualizado para "{new_status}" com sucesso!')
+        flash(f'Status da atividade atualizado para "{new_status}" com sucesso!', 'success')
         
     except Exception as e:
-        flash(f'Erro ao atualizar status: {str(e)}')
+        flash(f'Erro ao atualizar status: {str(e)}', 'error')
     
     return redirect(url_for('auth.index'))
 
 @auth_blueprint.route('/delete-atividade/<int:atividade_id>')
 def delete_atividade(atividade_id):
     if 'user_id' not in session:
-        flash('Por favor, faça login para acessar esta página')
+        flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
     try:
@@ -149,24 +161,24 @@ def delete_atividade(atividade_id):
         
         # Check if the current user is the creator (optional security check)
         if atividade.criado_por_id != session['user_id']:
-            flash('Você só pode excluir atividades que você criou')
+            flash('Você só pode excluir atividades que você criou', 'warning')
             return redirect(url_for('auth.index'))
         
         # Delete the atividade
         db.session.delete(atividade)
         db.session.commit()
         
-        flash('Atividade excluída com sucesso!')
+        flash('Atividade excluída com sucesso!', 'success')
         
     except Exception as e:
-        flash(f'Erro ao excluir atividade: {str(e)}')
+        flash(f'Erro ao excluir atividade: {str(e)}', 'error')
     
     return redirect(url_for('auth.index'))
 
 @auth_blueprint.route('/change-password', methods=['GET', 'POST'])
 def change_password():
     if 'user_id' not in session:
-        flash('Por favor, faça login para acessar esta página')
+        flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
@@ -174,28 +186,36 @@ def change_password():
         new_password = request.form['new_password']
         confirm_password = request.form['confirm_password']
         
-        user = get_user_by_username(session['username'])
+        user = get_user_by_email(session.get('email', ''))
+        
+        if not user:
+            flash('Sessão expirada. Faça login novamente.', 'warning')
+            return redirect(url_for('auth.login'))
         
         if not check_password_hash(user.password, current_password):
-            flash('Current password is incorrect')
+            flash('Senha atual incorreta', 'error')
             return redirect(url_for('auth.change_password'))
         
         if new_password != confirm_password:
-            flash('New passwords do not match')
+            flash('As novas senhas não coincidem', 'error')
             return redirect(url_for('auth.change_password'))
         
         if len(new_password) < 6:
-            flash('Password must be at least 6 characters long')
+            flash('A senha deve ter pelo menos 6 caracteres', 'error')
             return redirect(url_for('auth.change_password'))
         
         update_user_password(user, new_password)
-        flash('Password changed successfully!')
-        return redirect(url_for('auth.dashboard'))
+        flash('Senha alterada com sucesso!', 'success')
+        return redirect(url_for('auth.index'))
     
     return render_template('change_password.html')
 
 @auth_blueprint.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
+    # Redirect logged-in users to change password instead
+    if 'user_id' in session:
+        return redirect(url_for('auth.change_password'))
+    
     if request.method == 'POST':
         email = request.form['email']
         user = get_user_by_email(email)
@@ -203,9 +223,9 @@ def forgot_password():
         if user:
             token = user.generate_reset_token()
             send_reset_email(user.email, token)
-            flash('Instruções de redefinição de senha foram enviadas para seu email.')
+            flash('Instruções para redefinir a senha foram enviadas para seu email.', 'info')
         else:
-            flash('Endereço de email não encontrado.')
+            flash('Email não encontrado.', 'error')
         
         return redirect(url_for('auth.login'))
     
@@ -216,7 +236,7 @@ def reset_password(token):
     user = get_user_by_reset_token(token)
     
     if not user or not user.verify_reset_token(token):
-        flash('Invalid or expired reset token.')
+        flash('Token de redefinição inválido ou expirado.', 'error')
         return redirect(url_for('auth.login'))
     
     if request.method == 'POST':
@@ -224,15 +244,15 @@ def reset_password(token):
         confirm_password = request.form['confirm_password']
         
         if new_password != confirm_password:
-            flash('Passwords do not match')
+            flash('As senhas não coincidem', 'error')
             return redirect(url_for('auth.reset_password', token=token))
         
         if len(new_password) < 6:
-            flash('Password must be at least 6 characters long')
+            flash('A senha deve ter pelo menos 6 caracteres', 'error')
             return redirect(url_for('auth.reset_password', token=token))
         
         update_user_password(user, new_password)
-        flash('Password reset successful! Please log in.')
+        flash('Senha redefinida com sucesso! Faça o login.', 'success')
         return redirect(url_for('auth.login'))
     
     return render_template('reset_password.html', token=token)

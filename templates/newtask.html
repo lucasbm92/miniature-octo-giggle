@@ -31,10 +31,20 @@
                         <h3 class="mb-0">Nova Atividade</h3>
                     </div>
                     <div class="card-body">
-                        {% with messages = get_flashed_messages() %}
+                        {% with messages = get_flashed_messages(with_categories=true) %}
                             {% if messages %}
-                                {% for message in messages %}
-                                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                {% for category, message in messages %}
+                                    {% if category == 'error' %}
+                                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {% elif category == 'success' %}
+                                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    {% elif category == 'warning' %}
+                                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                    {% elif category == 'info' %}
+                                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {% else %}
+                                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {% endif %}
                                         {{ message }}
                                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                                     </div>
@@ -60,14 +70,21 @@
   </div>
   
   <div class="mb-3">
-    <label for="localizacao" class="form-label">Localização</label>
-    <input type="text" class="form-control" id="localizacao" name="localizacao" placeholder="Ex: Escritório Central, Home Office, Filial Norte">
+    <label for="local" class="form-label">Local</label>
+    <input type="text" class="form-control" id="local" name="local" placeholder="Ex: CAM 2, Hospital Infantil, CRSM 1" required>
+    <small class="form-text text-muted">Campo obrigatório - Especifique o local que necessita de suporte.</small>
+  </div>
+  
+  <div class="mb-3">
+    <label for="setor" class="form-label">Setor</label>
+    <input type="text" class="form-control" id="setor" name="setor" placeholder="Ex: Atenção Básica, Fundo Municipal, Recepção">
+    <small class="form-text text-muted">Campo opcional - Setor ou departamento específico.</small>
   </div>
   
   <div class="mb-3">
     <label for="responsavel_nome" class="form-label">Responsável</label>
     <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" placeholder="Ex: João Silva, Maria Santos">
-    <small class="form-text text-muted">Nome da pessoa responsável por executar a atividade (opcional).</small>
+    <small class="form-text text-muted">Pessoa que receberá o atendimento.</small>
   </div>
   
   <div class="d-grid gap-2 d-md-flex justify-content-md-end">
