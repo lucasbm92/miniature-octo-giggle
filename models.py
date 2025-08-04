@@ -15,6 +15,8 @@ class User(db.Model):
     reset_token = db.Column(db.String(100), nullable=True)
     reset_token_expiry = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    tipo = db.Column(db.Integer, nullable=False)
+    setor_id = db.Column(db.Integer, nullable=False)
 
     def generate_reset_token(self):
         """Generate a password reset token"""
@@ -54,9 +56,9 @@ class Atividade(db.Model):
     # Relationships
     criado_por = db.relationship('User', foreign_keys=[criado_por_id], backref='atividades_criadas')
 
-def create_user(username, email, password):
+def create_user(username, email, password, setor_id, tipo):
     hashed_password = generate_password_hash(password)
-    user = User(username=username, email=email, password=hashed_password)
+    user = User(username=username, email=email, password=hashed_password, setor_id=setor_id, tipo=tipo)
     db.session.add(user)
     db.session.commit()
     return user

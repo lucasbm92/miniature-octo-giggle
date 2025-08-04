@@ -21,6 +21,8 @@ def register():
         email = request.form['email']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        setor_id = request.form['setor_id']
+        tipo = 2
         
         # Validation
         if password != confirm_password:
@@ -35,7 +37,7 @@ def register():
             flash('Email já está cadastrado', 'error')
             return redirect(url_for('auth.register'))
         
-        create_user(username, email, password)
+        create_user(username, email, password, setor_id, tipo)
         flash('Cadastro realizado com sucesso! Faça o login.', 'success')
         return redirect(url_for('auth.login'))
     return render_template('register.html')
@@ -89,7 +91,6 @@ def new_task():
         # Get form data
         descricao = request.form['descricao']
         prioridade = request.form['prioridade']
-        prazo = request.form.get('prazo')
         local = request.form.get('local')
         setor = request.form.get('setor')
         responsavel_nome = request.form.get('responsavel_nome')
@@ -100,21 +101,10 @@ def new_task():
             return redirect(url_for('auth.new_task'))
         
         try:
-            from datetime import datetime, timedelta
-            if prioridade == 'Baixa':
-                prazo_value = datetime.now() + timedelta(days=15)
-            elif prioridade == 'Média':
-                prazo_value = datetime.now() + timedelta(days=10)
-            elif prioridade == 'Alta':
-                prazo_value = datetime.now() + timedelta(days=5)
-            else:
-                prazo_value = datetime.now() + timedelta(days=2)
-
             create_atividade(
                 descricao=descricao,
                 status='Pendente',
                 prioridade=prioridade,
-                prazo=prazo_value,
                 criado_por_id=session['user_id'],
                 local=local.strip() if local else None,
                 setor=setor.strip() if setor else None,
@@ -133,10 +123,16 @@ def update_status(atividade_id, new_status):
     if 'user_id' not in session:
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
-    
     try:
         # Get the atividade from database
         atividade = Atividade.query.get_or_404(atividade_id)
+        
+        # Restrict users with tipo == 2 from updating tasks
+        from models import User
+        user = User.query.get(session['user_id'])
+        if user and getattr(user, 'tipo', None) == 2:
+            flash('Você não tem permissão para atualizar atividades.', 'warning')
+            return redirect(url_for('auth.index'))
         
         # Update the status
         atividade.status = new_status
@@ -154,10 +150,16 @@ def delete_atividade(atividade_id):
     if 'user_id' not in session:
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
-    
     try:
         # Get the atividade from database
         atividade = Atividade.query.get_or_404(atividade_id)
+        
+        # Restrict users with tipo == 2 from deleting tasks
+        from models import User
+        user = User.query.get(session['user_id'])
+        if user and getattr(user, 'tipo', None) == 2:
+            flash('Você não tem permissão para excluir atividades.', 'warning')
+            return redirect(url_for('auth.index'))
         
         # Check if the current user is the creator (optional security check)
         if atividade.criado_por_id != session['user_id']:
