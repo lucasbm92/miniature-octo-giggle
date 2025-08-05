@@ -108,3 +108,5 @@ poetry.lock
 Thumbs.db
 
 DEPLOYMENT.md
+
+logs/

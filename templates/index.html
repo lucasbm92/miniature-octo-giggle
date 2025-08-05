@@ -11,8 +11,8 @@
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('auth.index') }}">Gestor de Tarefas</a>
             <div class="navbar-nav ms-auto">
-                {% if username %}
-                    <span class="navbar-text me-3">Bem-vindo, {{ username }}!</span>
+                {% if user %}
+                    <span class="navbar-text me-3">Bem-vindo, {{ user.username }}!</span>
                     <a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a>
                     <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
@@ -59,8 +59,10 @@
                     <th scope="col">Data criada</th>
                     <th scope="col">Prazo</th>
                     <th scope="col">Status</th>
-                    <th scope="col">Ações</th>
-                    <th scope="col"><a href="{{ url_for('auth.new_task') }}" class="btn btn-primary btn-sm">+</a></th>
+                    {% if user.tipo == 1 %}
+                        <th scope="col">Ações</th>
+                    {% endif %}
+                    <th scope="col"><a href="{{ url_for('auth.new_task') }}" class="btn btn-primary btn-sm">Criar</a></th>
                 </tr>
             </thead>
             <tbody>
@@ -84,7 +86,7 @@
                                 {% endif %}
                             </td>
                             <td>{{ atividade.data_criada.strftime('%d/%m/%Y') if atividade.data_criada else '' }}</td>
-                            <td>{{ atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definida' }}</td>
+                            <td>{{ atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definido' }}</td>
                             <td>
                                 {% if atividade.status == 'Pendente' %}
                                     <span class="badge bg-warning">{{ atividade.status }}</span>
@@ -96,16 +98,18 @@
                                     <span class="badge bg-danger">{{ atividade.status }}</span>
                                 {% endif %}
                             </td>
-                            <td>
-                                {% if atividade.status == 'Pendente' %}
-                                    <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Em andamento') }}" class="btn btn-sm btn-primary">Iniciar</a>
-                                {% elif atividade.status == 'Em andamento' %}
-                                    <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Concluída') }}" class="btn btn-sm btn-success">Concluir</a>
-                                {% elif atividade.status == 'Concluída' %}
-                                    <a href="#" class="btn btn-sm btn-secondary disabled">Concluída</a>
-                                {% endif %}
-                                <a href="{{ url_for('auth.delete_atividade', atividade_id=atividade.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')">Excluir</a>
-                            </td>
+                            {% if user.tipo == 1 %}
+                                <td>
+                                    {% if atividade.status == 'Pendente' %}
+                                        <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Em andamento') }}" class="btn btn-sm btn-primary">Iniciar</a>
+                                    {% elif atividade.status == 'Em andamento' %}
+                                        <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Concluída') }}" class="btn btn-sm btn-success">Concluir</a>
+                                    {% elif atividade.status == 'Concluída' %}
+                                        <a href="#" class="btn btn-sm btn-secondary disabled">Concluída</a>
+                                    {% endif %}
+                                    <a href="{{ url_for('auth.delete_atividade', atividade_id=atividade.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')">Excluir</a>
+                                </td>
+                            {% endif %}
                         </tr>
                     {% endfor %}
                 {% else %}

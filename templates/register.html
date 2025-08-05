@@ -6,10 +6,13 @@
     <style>
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; }
-        input[type="text"], input[type="email"], input[type="password"] { 
+        input[type="text"], input[type="email"], input[type="password"], select { 
             width: 300px; 
             padding: 8px; 
             margin-bottom: 10px; 
+        }
+        select {
+            width: 316px; /* Slightly wider to account for dropdown arrow */
         }
         button { 
             padding: 10px 20px; 
@@ -57,6 +60,28 @@
             <label>Email:</label>
             <input type="email" name="email" required>
             <small class="form-text text-muted">Use este e-mail para fazer login</small>
+        </div>
+        
+        <div class="form-group">
+            <label>Setor:</label>
+            <select name="setor_id" required style="width: 316px; padding: 8px; margin-bottom: 10px;">
+                <option value="">Selecione seu setor</option>
+                <option value="1">Atenção Básica</option>
+                <option value="2">Central de Abastecimento Farmacêutico (CAF)</option>
+                <option value="3">Epidemiologia</option>
+                <option value="4">Faturamento</option>
+                <option value="5">Fundo Municipal</option>
+                <option value="6">Gabinete</option>
+                <option value="7">Gerência de Atenção à Saúde (GAS)</option>
+                <option value="8">Planejamento</option>
+                <option value="9">Programa Nacional de Imunizações (PNI)</option>
+                <option value="10">Recursos Humanos</option>
+                <option value="11">Regulação</option>
+                <option value="12">Secretaria Executiva</option>
+                <option value="13">Transporte</option>
+                <option value="14">Vigilância Sanitária</option>
+            </select>
+            <small class="form-text text-muted">Selecione o setor onde você trabalha</small>
         </div>
         
         <div class="form-group">

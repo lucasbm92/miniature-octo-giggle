@@ -79,7 +79,11 @@ def index():
     # Get all atividades from database
     atividades = get_all_atividades()
     
-    return render_template('index.html', username=session.get('username'), atividades=atividades)
+    # Get the current user object
+    from models import User
+    user = User.query.get(session['user_id'])
+    
+    return render_template('index.html', atividades=atividades, user=user)
 
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():
@@ -124,25 +128,29 @@ def update_status(atividade_id, new_status):
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     try:
-        # Get the atividade from database
         atividade = Atividade.query.get_or_404(atividade_id)
-        
-        # Restrict users with tipo == 2 from updating tasks
         from models import User
         user = User.query.get(session['user_id'])
         if user and getattr(user, 'tipo', None) == 2:
             flash('Você não tem permissão para atualizar atividades.', 'warning')
             return redirect(url_for('auth.index'))
-        
-        # Update the status
+        # Set prazo when moving from Pendente to Em andamento
+        if atividade.status == 'Pendente' and new_status == 'Em andamento':
+            from datetime import datetime, timedelta
+            # Set prazo based on prioridade
+            if atividade.prioridade == 'Baixa':
+                atividade.prazo = datetime.now() + timedelta(days=15)
+            elif atividade.prioridade == 'Média':
+                atividade.prazo = datetime.now() + timedelta(days=10)
+            elif atividade.prioridade == 'Alta':
+                atividade.prazo = datetime.now() + timedelta(days=5)
+            elif atividade.prioridade == 'Crítica':
+                atividade.prazo = datetime.now() + timedelta(days=2)
         atividade.status = new_status
         db.session.commit()
-        
         flash(f'Status da atividade atualizado para "{new_status}" com sucesso!', 'success')
-        
     except Exception as e:
         flash(f'Erro ao atualizar status: {str(e)}', 'error')
-    
     return redirect(url_for('auth.index'))
 
 @auth_blueprint.route('/delete-atividade/<int:atividade_id>')
@@ -151,30 +159,19 @@ def delete_atividade(atividade_id):
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     try:
-        # Get the atividade from database
         atividade = Atividade.query.get_or_404(atividade_id)
-        
-        # Restrict users with tipo == 2 from deleting tasks
         from models import User
         user = User.query.get(session['user_id'])
         if user and getattr(user, 'tipo', None) == 2:
             flash('Você não tem permissão para excluir atividades.', 'warning')
             return redirect(url_for('auth.index'))
-        
-        # Check if the current user is the creator (optional security check)
-        if atividade.criado_por_id != session['user_id']:
-            flash('Você só pode excluir atividades que você criou', 'warning')
-            return redirect(url_for('auth.index'))
-        
-        # Delete the atividade
+        # Only restrict tipo==2 users, tipo==1 can delete any task
+        # Remove creator check for tipo==1
         db.session.delete(atividade)
         db.session.commit()
-        
         flash('Atividade excluída com sucesso!', 'success')
-        
     except Exception as e:
         flash(f'Erro ao excluir atividade: {str(e)}', 'error')
-    
     return redirect(url_for('auth.index'))
 
 @auth_blueprint.route('/change-password', methods=['GET', 'POST'])
