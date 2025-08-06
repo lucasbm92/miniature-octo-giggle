@@ -54,7 +54,8 @@
                     <th scope="col">Local</th>
                     <th scope="col">Setor</th>
                     <th scope="col">Criado por</th>
-                    <th scope="col">Responsável</th>
+                    <th scope="col">Solicitante</th>
+                    <th scope="col">Atendente</th>
                     <th scope="col">Prioridade</th>
                     <th scope="col">Data criada</th>
                     <th scope="col">Prazo</th>
@@ -73,7 +74,8 @@
                             <td>{{ atividade.local or 'Não especificado' }}</td>
                             <td>{{ atividade.setor or '-' }}</td>
                             <td>{{ atividade.criado_por_nome }}</td>
-                            <td>{{ atividade.responsavel_nome or 'Não atribuído' }}</td>
+                            <td>{{ atividade.solicitante or 'Não atribuído' }}</td>
+                            <td>{{ atividade.atendente or '-' }}</td>
                             <td>
                                 {% if atividade.prioridade == 'Baixa' %}
                                     <span class="badge bg-success">{{ atividade.prioridade }}</span>
@@ -114,7 +116,7 @@
                     {% endfor %}
                 {% else %}
                     <tr>
-                        <td colspan="10" class="text-center text-muted">
+                        <td colspan="11" class="text-center text-muted">
                             <p class="my-3">Nenhuma atividade encontrada.</p>
                             <a href="{{ url_for('auth.new_task') }}" class="btn btn-primary">Criar primeira atividade</a>
                         </td>

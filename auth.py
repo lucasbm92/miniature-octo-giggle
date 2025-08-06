@@ -15,7 +15,8 @@ def register():
     # Redirect logged-in users to dashboard
     if 'user_id' in session:
         return redirect(url_for('auth.index'))
-    
+    from models import Setor
+    setores = Setor.query.all()
     if request.method == 'POST':
         username = request.form['username']
         email = request.form['email']
@@ -40,7 +41,7 @@ def register():
         create_user(username, email, password, setor_id, tipo)
         flash('Cadastro realizado com sucesso! Faça o login.', 'success')
         return redirect(url_for('auth.login'))
-    return render_template('register.html')
+    return render_template('register.html', setores=setores)
 
 @auth_blueprint.route('/login', methods=['GET', 'POST'])
 def login():
@@ -97,7 +98,18 @@ def new_task():
         prioridade = request.form['prioridade']
         local = request.form.get('local')
         setor = request.form.get('setor')
-        responsavel_nome = request.form.get('responsavel_nome')
+        solicitante = request.form.get('solicitante')
+        
+        # Get current user to check tipo and setor_id
+        from models import User, Setor
+        current_user = User.query.get(session['user_id'])
+        
+        # If user tipo is 2, force setor to be the user's setor name
+        if current_user and getattr(current_user, 'tipo', None) == 2:
+            user_setor = Setor.query.get(current_user.setor_id)
+            setor = user_setor.nome if user_setor else None
+            local = "CAM 2"
+            solicitante = current_user.username
         
         # Basic validation
         if not descricao or not prioridade or not local:
@@ -112,7 +124,7 @@ def new_task():
                 criado_por_id=session['user_id'],
                 local=local.strip() if local else None,
                 setor=setor.strip() if setor else None,
-                responsavel_nome=responsavel_nome.strip() if responsavel_nome else None
+                solicitante=solicitante.strip() if solicitante else None
             )
             flash('Atividade criada com sucesso!', 'success')
             return redirect(url_for('auth.index'))
@@ -120,7 +132,11 @@ def new_task():
             flash(f'Erro ao criar atividade: {str(e)}', 'error')
             return redirect(url_for('auth.new_task'))
     
-    return render_template('newtask.html', username=session.get('username'))
+    # Get current user to pass to template
+    from models import User
+    current_user = User.query.get(session['user_id'])
+    
+    return render_template('newtask.html', username=session.get('username'), user=current_user)
 
 @auth_blueprint.route('/update-status/<int:atividade_id>/<new_status>')
 def update_status(atividade_id, new_status):
@@ -146,6 +162,10 @@ def update_status(atividade_id, new_status):
                 atividade.prazo = datetime.now() + timedelta(days=5)
             elif atividade.prioridade == 'Crítica':
                 atividade.prazo = datetime.now() + timedelta(days=2)
+            # Set atendente to current user's username
+            current_user = User.query.get(session['user_id'])
+            if current_user:
+                atividade.atendente = current_user.username
         atividade.status = new_status
         db.session.commit()
         flash(f'Status da atividade atualizado para "{new_status}" com sucesso!', 'success')

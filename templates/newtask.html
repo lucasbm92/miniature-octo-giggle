@@ -69,23 +69,29 @@
     </select>
   </div>
   
+  {% if user.tipo != 2 %}
   <div class="mb-3">
     <label for="local" class="form-label">Local</label>
     <input type="text" class="form-control" id="local" name="local" placeholder="Ex: CAM 2, Hospital Infantil, CRSM 1" required>
     <small class="form-text text-muted">Campo obrigatório - Especifique o local que necessita de suporte.</small>
   </div>
+  {% endif %}
   
+  {% if user.tipo != 2 %}
   <div class="mb-3">
     <label for="setor" class="form-label">Setor</label>
     <input type="text" class="form-control" id="setor" name="setor" placeholder="Ex: Atenção Básica, Fundo Municipal, Recepção">
     <small class="form-text text-muted">Campo opcional - Setor ou departamento específico.</small>
   </div>
+  {% endif %}
   
+  {% if user.tipo != 2 %}
   <div class="mb-3">
-    <label for="responsavel_nome" class="form-label">Responsável</label>
-    <input type="text" class="form-control" id="responsavel_nome" name="responsavel_nome" placeholder="Ex: João Silva, Maria Santos">
+    <label for="solicitante" class="form-label">Solicitante</label>
+    <input type="text" class="form-control" id="solicitante" name="solicitante" placeholder="Ex: João Silva, Maria Santos">
     <small class="form-text text-muted">Pessoa que receberá o atendimento.</small>
   </div>
+  {% endif %}
   
   <div class="d-grid gap-2 d-md-flex justify-content-md-end">
     <a href="{{ url_for('auth.index') }}" class="btn btn-secondary me-md-2">Cancelar</a>
