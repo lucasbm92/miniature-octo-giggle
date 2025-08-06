@@ -110,3 +110,5 @@ Thumbs.db
 DEPLOYMENT.md
 
 logs/
+
+.venv/
