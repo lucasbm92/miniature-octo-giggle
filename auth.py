@@ -3,7 +3,7 @@ from flask_mail import Mail, Message
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import (get_user_by_username, get_user_by_email, create_user, 
                    get_user_by_reset_token, update_user_password, create_atividade, 
-                   get_all_atividades, Atividade, db)
+                   get_all_atividades, get_atividades_by_setor, Atividade, db)
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -77,12 +77,22 @@ def index():
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
-    # Get all atividades from database
-    atividades = get_all_atividades()
-    
     # Get the current user object
-    from models import User
+    from models import User, Setor
     user = User.query.get(session['user_id'])
+    
+    # Filter atividades based on user type
+    if user and getattr(user, 'tipo', None) == 2:
+        # For tipo 2 users, only show tasks from their setor
+        user_setor = Setor.query.get(user.setor_id)
+        if user_setor:
+            # Get tasks that match the user's setor name
+            atividades = get_atividades_by_setor(user_setor.nome)
+        else:
+            atividades = []
+    else:
+        # For tipo 1 users, show all tasks
+        atividades = get_all_atividades()
     
     return render_template('index.html', atividades=atividades, user=user)
 
@@ -107,7 +117,15 @@ def new_task():
         # If user tipo is 2, force setor to be the user's setor name
         if current_user and getattr(current_user, 'tipo', None) == 2:
             user_setor = Setor.query.get(current_user.setor_id)
-            setor = user_setor.nome if user_setor else None
+            expected_setor = user_setor.nome if user_setor else None
+            
+            # Validate that tipo 2 users can only create tasks in their own sector
+            if setor and setor.strip() != expected_setor:
+                flash('Você só pode criar atividades no seu próprio setor.', 'error')
+                return redirect(url_for('auth.new_task'))
+            
+            # Force correct values for tipo 2 users
+            setor = expected_setor
             local = "CAM 2"
             solicitante = current_user.username
         

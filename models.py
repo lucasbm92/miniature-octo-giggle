@@ -110,6 +110,31 @@ def get_all_atividades():
         CriadorUser, Atividade.criado_por_id == CriadorUser.id
     ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
 
+def get_atividades_by_setor(setor_nome):
+    """Get all atividades filtered by setor name"""
+    from sqlalchemy.orm import aliased
+    
+    # Create alias for the User table (only for creator now)
+    CriadorUser = aliased(User)
+    
+    return db.session.query(
+        Atividade.id,
+        Atividade.descricao,
+        Atividade.status,
+        Atividade.prioridade,
+        Atividade.data_criada,
+        Atividade.prazo,
+        Atividade.local,
+        Atividade.setor,
+        CriadorUser.username.label('criado_por_nome'),
+        Atividade.solicitante,
+        Atividade.atendente
+    ).join(
+        CriadorUser, Atividade.criado_por_id == CriadorUser.id
+    ).filter(
+        Atividade.setor == setor_nome
+    ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
+
 def get_user_by_username(username):
     return User.query.filter_by(username=username).first()
 
