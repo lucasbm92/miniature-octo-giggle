@@ -142,7 +142,7 @@ def new_task():
                 descricao=descricao,
                 status='Pendente',
                 prioridade=prioridade,
-                criado_por_id=session['user_id'],
+                user_id=session['user_id'],
                 local=local.strip() if local else None,
                 setor=setor.strip() if setor else None,
                 solicitante=solicitante.strip() if solicitante else None

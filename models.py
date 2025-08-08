@@ -40,7 +40,7 @@ class User(db.Model):
         db.session.commit()
 
 class Atividade(db.Model):
-    __tablename__ = 'atividades'
+    __tablename__ = 'atividade'
     
     id = db.Column(db.Integer, primary_key=True)
     descricao = db.Column(db.Text, nullable=False)
@@ -50,12 +50,12 @@ class Atividade(db.Model):
     prazo = db.Column(db.DateTime, nullable=True)
     local = db.Column(db.String(255), nullable=False)
     setor = db.Column(db.String(100), nullable=True)
-    criado_por_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     solicitante = db.Column(db.String(100), nullable=True)
     atendente = db.Column(db.String(100), nullable=True)
     
     # Relationships
-    criado_por = db.relationship('User', foreign_keys=[criado_por_id], backref='atividades_criadas')
+    criado_por = db.relationship('User', foreign_keys=[user_id], backref='atividade_criadas')
 
 def create_user(username, email, password, setor_id, tipo):
     hashed_password = generate_password_hash(password)
@@ -64,7 +64,7 @@ def create_user(username, email, password, setor_id, tipo):
     db.session.commit()
     return user
 
-def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, local=None, setor=None, solicitante=None):
+def create_atividade(descricao, status, prioridade, user_id, prazo=None, local=None, setor=None, solicitante=None):
     """Create a new atividade"""
     # Parse prazo if it's a string
     if prazo and isinstance(prazo, str):
@@ -77,7 +77,7 @@ def create_atividade(descricao, status, prioridade, criado_por_id, prazo=None, l
         descricao=descricao,
         status=status,
         prioridade=prioridade,
-        criado_por_id=criado_por_id,
+        user_id=user_id,
         prazo=prazo,
         local=local,
         setor=setor if setor else None,
@@ -107,7 +107,7 @@ def get_all_atividades():
         Atividade.solicitante,
         Atividade.atendente
     ).join(
-        CriadorUser, Atividade.criado_por_id == CriadorUser.id
+        CriadorUser, Atividade.user_id == CriadorUser.id
     ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
 
 def get_atividades_by_setor(setor_nome):
@@ -130,7 +130,7 @@ def get_atividades_by_setor(setor_nome):
         Atividade.solicitante,
         Atividade.atendente
     ).join(
-        CriadorUser, Atividade.criado_por_id == CriadorUser.id
+        CriadorUser, Atividade.user_id == CriadorUser.id
     ).filter(
         Atividade.setor == setor_nome
     ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
