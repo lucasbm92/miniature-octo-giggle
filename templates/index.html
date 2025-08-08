@@ -69,7 +69,7 @@
             <tbody>
                 {% if atividades %}
                     {% for atividade in atividades %}
-                        <tr>
+                        <tr data-atividade-id="{{ atividade.id }}">
                             <td>{{ atividade.descricao }}</td>
                             <td>{{ atividade.local or 'Não especificado' }}</td>
                             <td>{{ atividade.setor or '-' }}</td>
@@ -127,5 +127,313 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% if user and (user.tipo == 1 or (user.tipo == 2 and user_setor)) %}
+    <!-- WebSocket for real-time notifications -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.2/socket.io.js"></script>
+    <script>
+        // Initialize WebSocket connection
+        const socket = io();
+        const userTipo = {{ user.tipo }};
+        const userSetor = '{{ user_setor if user_setor else "" }}';
+        
+        // Connect and join appropriate room based on user type
+        socket.on('connect', function() {
+            console.log('Connected to WebSocket');
+            
+            if (userTipo === 1) {
+                // Admin user joins admin room
+                socket.emit('join_admin_room');
+                console.log('Joined admin room');
+            } else if (userTipo === 2 && userSetor) {
+                // Regular user joins sector room
+                socket.emit('join_setor_room', {setor: userSetor});
+                console.log('Joined sector room:', userSetor);
+            }
+        });
+        
+        // Handle new task notifications for admins (tipo==1)
+        socket.on('new_task_notification', function(data) {
+            if (userTipo === 1) {
+                console.log('New task notification received:', data);
+                
+                // Play beep sound
+                playBeep(800, 0.5); // High pitched beep for new tasks
+                
+                // Show browser notification if permission granted
+                if (Notification.permission === 'granted') {
+                    new Notification('Nova Tarefa Criada!', {
+                        body: data.message,
+                        icon: '/static/images/brasao.svg'
+                    });
+                }
+                
+                // Show Bootstrap toast notification
+                showToast('Nova Tarefa!', data.message, 'success');
+                
+                // Add new task to the table without refreshing
+                addNewTaskToTable(data);
+            }
+        });
+        
+        // Handle activity update notifications for tipo==2 users
+        socket.on('activity_update_notification', function(data) {
+            if (userTipo === 2) {
+                console.log('Activity update notification received:', data);
+                
+                // Play beep sound
+                playBeep(600, 0.3); // Lower pitched beep for updates
+                
+                // Show browser notification if permission granted
+                if (Notification.permission === 'granted') {
+                    new Notification('Atividade Atualizada!', {
+                        body: data.message,
+                        icon: '/static/images/brasao.svg'
+                    });
+                }
+                
+                // Show Bootstrap toast notification
+                showToast('Atividade Atualizada!', data.message, 'info');
+                
+                // Update the task status in the table without refreshing
+                updateTaskInTable(data);
+            }
+        });
+        
+        // Function to play beep sound
+        function playBeep(frequency = 700, duration = 0.4) {
+            try {
+                // Create AudioContext
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Create oscillator
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = 'sine';
+                
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.01);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + duration);
+            } catch (error) {
+                console.error('Error playing beep:', error);
+            }
+        }
+        
+        // Function to show Bootstrap toast notification
+        function showToast(title, message, type) {
+            // Create toast HTML
+            const bgClass = type === 'success' ? 'bg-primary' : type === 'info' ? 'bg-info' : 'bg-danger';
+            const toastHtml = `
+                <div class="toast align-items-center text-white ${bgClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            <strong>${title}</strong><br>
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            // Get or create toast container
+            let toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) {
+                toastContainer = document.createElement('div');
+                toastContainer.id = 'toast-container';
+                toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+                toastContainer.style.zIndex = '1055';
+                document.body.appendChild(toastContainer);
+            }
+            
+            // Add toast to container
+            toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+            
+            // Initialize and show toast
+            const toastElement = toastContainer.lastElementChild;
+            const delayTime = userTipo === 1 ? 5000 : 4000;
+            const toast = new bootstrap.Toast(toastElement, {
+                autohide: true,
+                delay: delayTime
+            });
+            toast.show();
+            
+            // Remove toast element after it's hidden
+            toastElement.addEventListener('hidden.bs.toast', function() {
+                toastElement.remove();
+            });
+        }
+        
+        // Function to add new task to the table dynamically
+        function addNewTaskToTable(data) {
+            try {
+                const tbody = document.querySelector('tbody');
+                if (!tbody) {
+                    console.error('Table body not found');
+                    return;
+                }
+                
+                // Remove "no activities" message if it exists
+                const noActivitiesRow = tbody.querySelector('td[colspan]');
+                if (noActivitiesRow) {
+                    noActivitiesRow.closest('tr').remove();
+                }
+                
+                // Create priority badge
+                let priorityBadge = '';
+                switch(data.prioridade) {
+                    case 'Baixa':
+                        priorityBadge = '<span class="badge bg-success">Baixa</span>';
+                        break;
+                    case 'Média':
+                        priorityBadge = '<span class="badge bg-info">Média</span>';
+                        break;
+                    case 'Alta':
+                        priorityBadge = '<span class="badge bg-warning">Alta</span>';
+                        break;
+                    case 'Crítica':
+                        priorityBadge = '<span class="badge bg-danger">Crítica</span>';
+                        break;
+                    default:
+                        priorityBadge = '<span class="badge bg-secondary">' + data.prioridade + '</span>';
+                }
+                
+                // Create status badge
+                const statusBadge = '<span class="badge bg-warning">Pendente</span>';
+                
+                // Create action buttons for admin users
+                const actionButtons = userTipo === 1 ? `
+                    <a href="/update-status/${data.atividade_id}/Em andamento" class="btn btn-sm btn-primary">Iniciar</a>
+                    <a href="/delete-atividade/${data.atividade_id}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')">Excluir</a>
+                ` : '';
+                
+                // Create new row HTML with the real activity ID
+                const newRowHtml = `
+                    <tr data-atividade-id="${data.atividade_id}" style="background-color: #e8f5e8; transition: background-color 3s ease;">
+                        <td>${data.descricao}</td>
+                        <td>${data.local}</td>
+                        <td>${data.setor}</td>
+                        <td>${data.criado_por_nome}</td>
+                        <td>${data.solicitante}</td>
+                        <td>${data.atendente}</td>
+                        <td>${priorityBadge}</td>
+                        <td>${data.data_criada}</td>
+                        <td>${data.prazo}</td>
+                        <td>${statusBadge}</td>
+                        ${userTipo === 1 ? '<td>' + actionButtons + '</td>' : ''}
+                    </tr>
+                `;
+                
+                // Add to the top of the table
+                tbody.insertAdjacentHTML('afterbegin', newRowHtml);
+                
+                // Remove the highlight after 3 seconds
+                setTimeout(function() {
+                    const newRow = document.querySelector(`tr[data-atividade-id="${data.atividade_id}"]`);
+                    if (newRow) {
+                        newRow.style.backgroundColor = '';
+                    }
+                }, 3000);
+                
+                console.log('Added new task to table:', data.descricao);
+                
+            } catch (error) {
+                console.error('Error adding new task to table:', error);
+            }
+        }
+        
+        // Function to update task status in the table dynamically
+        function updateTaskInTable(data) {
+            try {
+                // Find the table row for this activity using the data attribute
+                const targetRow = document.querySelector(`tr[data-atividade-id="${data.atividade_id}"]`);
+                
+                if (targetRow) {
+                    const cells = targetRow.querySelectorAll('td');
+                    
+                    // Update status cell (find the cell with badge or status text)
+                    let statusCell = null;
+                    let atendenteCell = null;
+                    let prazoCell = null;
+                    
+                    cells.forEach(function(cell, index) {
+                        // Status cell - contains badge elements
+                        if (cell.querySelector('.badge') && 
+                            (cell.textContent.includes('Pendente') || 
+                             cell.textContent.includes('Em andamento') || 
+                             cell.textContent.includes('Concluída'))) {
+                            statusCell = cell;
+                        }
+                        
+                        // Based on the table structure, atendente should be around index 5
+                        if (index === 5) {
+                            atendenteCell = cell;
+                        }
+                        
+                        // Prazo should be around index 8
+                        if (index === 8) {
+                            prazoCell = cell;
+                        }
+                    });
+                    
+                    // Update status
+                    if (statusCell) {
+                        let badgeClass = '';
+                        switch(data.status) {
+                            case 'Pendente':
+                                badgeClass = 'bg-warning';
+                                break;
+                            case 'Em andamento':
+                                badgeClass = 'bg-primary';
+                                break;
+                            case 'Concluída':
+                                badgeClass = 'bg-success';
+                                break;
+                            default:
+                                badgeClass = 'bg-secondary';
+                        }
+                        
+                        statusCell.innerHTML = `<span class="badge ${badgeClass}">${data.status}</span>`;
+                    }
+                    
+                    // Update atendente if available
+                    if (atendenteCell && data.atendente) {
+                        atendenteCell.textContent = data.atendente;
+                    }
+                    
+                    // Update prazo if available
+                    if (prazoCell && data.prazo) {
+                        prazoCell.textContent = data.prazo;
+                    }
+                    
+                    // Add a subtle highlight animation
+                    targetRow.style.transition = 'background-color 0.5s ease';
+                    targetRow.style.backgroundColor = '#e3f2fd';
+                    setTimeout(function() {
+                        targetRow.style.backgroundColor = '';
+                    }, 2000);
+                    
+                    console.log('Updated task status in table:', data.status);
+                } else {
+                    console.log('Task row not found for ID:', data.atividade_id);
+                }
+            } catch (error) {
+                console.error('Error updating task in table:', error);
+            }
+        }
+        
+        // Request notification permission on page load
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+    </script>
+    {% endif %}
 </body>
 </html>

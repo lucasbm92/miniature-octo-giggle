@@ -1,5 +1,6 @@
 from flask import Blueprint, request, render_template, redirect, url_for, session, flash
 from flask_mail import Mail, Message
+from flask_socketio import emit
 from werkzeug.security import generate_password_hash, check_password_hash
 from models import (get_user_by_username, get_user_by_email, create_user, 
                    get_user_by_reset_token, update_user_password, create_atividade, 
@@ -82,10 +83,12 @@ def index():
     user = User.query.get(session['user_id'])
     
     # Filter atividades based on user type
+    user_setor_nome = None
     if user and getattr(user, 'tipo', None) == 2:
         # For tipo 2 users, only show tasks from their setor
         user_setor = Setor.query.get(user.setor_id)
         if user_setor:
+            user_setor_nome = user_setor.nome
             # Get tasks that match the user's setor name
             atividades = get_atividades_by_setor(user_setor.nome)
         else:
@@ -94,7 +97,7 @@ def index():
         # For tipo 1 users, show all tasks
         atividades = get_all_atividades()
     
-    return render_template('index.html', atividades=atividades, user=user)
+    return render_template('index.html', atividades=atividades, user=user, user_setor=user_setor_nome)
 
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():
@@ -135,7 +138,7 @@ def new_task():
             return redirect(url_for('auth.new_task'))
         
         try:
-            create_atividade(
+            new_atividade = create_atividade(
                 descricao=descricao,
                 status='Pendente',
                 prioridade=prioridade,
@@ -144,6 +147,33 @@ def new_task():
                 setor=setor.strip() if setor else None,
                 solicitante=solicitante.strip() if solicitante else None
             )
+            
+            # Emit notification to admin users (tipo==1) if task was created by tipo==2 user
+            if current_user and getattr(current_user, 'tipo', None) == 2:
+                try:
+                    # Import here to avoid circular imports
+                    from flask import current_app
+                    socketio = current_app.extensions.get('socketio')
+                    if socketio:
+                        # Send complete data including the new activity ID
+                        from datetime import datetime
+                        socketio.emit('new_task_notification', {
+                            'atividade_id': new_atividade.id,
+                            'descricao': descricao,
+                            'local': local.strip() if local else 'Não especificado',
+                            'setor': setor.strip() if setor else '-',
+                            'criado_por_nome': current_user.username,
+                            'solicitante': solicitante.strip() if solicitante else 'Não atribuído',
+                            'atendente': '-',
+                            'prioridade': prioridade,
+                            'data_criada': datetime.now().strftime('%d/%m/%Y'),
+                            'prazo': 'Não definido',
+                            'status': 'Pendente',
+                            'message': f'Nova tarefa criada por {solicitante} no setor {setor}'
+                        }, room='admin_room')
+                except Exception as socket_error:
+                    print(f"Error sending WebSocket notification: {socket_error}")
+            
             flash('Atividade criada com sucesso!', 'success')
             return redirect(url_for('auth.index'))
         except Exception as e:
@@ -186,6 +216,30 @@ def update_status(atividade_id, new_status):
                 atividade.atendente = current_user.username
         atividade.status = new_status
         db.session.commit()
+        
+        # Emit notification to tipo==2 users when their activities are updated
+        try:
+            # Import here to avoid circular imports
+            from flask import current_app
+            socketio = current_app.extensions.get('socketio')
+            if socketio:
+                # Get the setor of the updated activity
+                setor_room = f"setor_{atividade.setor}" if atividade.setor else None
+                
+                if setor_room:
+                    socketio.emit('activity_update_notification', {
+                        'atividade_id': atividade.id,
+                        'descricao': atividade.descricao,
+                        'status': new_status,
+                        'prioridade': atividade.prioridade,
+                        'setor': atividade.setor,
+                        'atendente': atividade.atendente,
+                        'prazo': atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definido',
+                        'message': f'Atividade "{atividade.descricao[:50]}..." foi atualizada para "{new_status}"'
+                    }, room=setor_room)
+        except Exception as socket_error:
+            print(f"Error sending WebSocket notification: {socket_error}")
+        
         flash(f'Status da atividade atualizado para "{new_status}" com sucesso!', 'success')
     except Exception as e:
         flash(f'Erro ao atualizar status: {str(e)}', 'error')

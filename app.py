@@ -1,4 +1,5 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, emit, join_room
 from auth import auth_blueprint, mail
 from models import db, init_db
 import os
@@ -16,6 +17,12 @@ app.config['DEBUG'] = False
 app.config['TESTING'] = False
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')  # Must be secure!
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize SocketIO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+# Store socketio in app extensions for access from blueprints
+app.extensions['socketio'] = socketio
 
 # Security headers
 @app.after_request
@@ -45,6 +52,30 @@ mail.init_app(app)
 init_db(app)
 
 app.register_blueprint(auth_blueprint)
+
+# WebSocket events
+@socketio.on('connect')
+def on_connect():
+    print(f"Client connected: {request.sid}")
+
+@socketio.on('disconnect')
+def on_disconnect():
+    print(f"Client disconnected: {request.sid}")
+
+@socketio.on('join_admin_room')
+def on_join_admin_room():
+    """Join room for admin users (tipo==1) to receive notifications"""
+    join_room('admin_room')
+    emit('status', {'msg': 'Joined admin notification room'})
+
+@socketio.on('join_setor_room')
+def on_join_setor_room(data):
+    """Join room for tipo==2 users to receive sector-specific notifications"""
+    setor = data.get('setor')
+    if setor:
+        setor_room = f"setor_{setor}"
+        join_room(setor_room)
+        emit('status', {'msg': f'Joined sector room: {setor_room}'})
 
 # Error handlers
 @app.errorhandler(404)
@@ -80,4 +111,4 @@ if __name__ == '__main__':
     print("Starting Gestor de Tarefas")
     print("Access at: http://localhost:5000 or http://YOUR_IP:5000")
     
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
