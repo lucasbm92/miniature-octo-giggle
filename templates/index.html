@@ -124,6 +124,95 @@
                 {% endif %}
             </tbody>
         </table>
+        
+        <!-- Pagination Controls -->
+        {% if pagination and pagination.pages > 1 %}
+        <nav aria-label="Task pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <!-- First Page -->
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.index', page=1) }}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;&laquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Previous Page -->
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.index', page=pagination.prev_num) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Page Numbers -->
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('auth.index', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Next Page -->
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.index', page=pagination.next_num) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Last Page -->
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.index', page=pagination.pages) }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <!-- Pagination Info -->
+        {% if pagination %}
+        <div class="text-center text-muted mt-2">
+            <small>
+                Exibindo {{ ((pagination.page - 1) * pagination.per_page + 1) }} a 
+                {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total else pagination.total }} 
+                de {{ pagination.total }} tarefas
+            </small>
+        </div>
+        {% endif %}
+        {% endif %}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

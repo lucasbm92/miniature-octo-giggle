@@ -5,6 +5,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from models import (get_user_by_username, get_user_by_email, create_user, 
                    get_user_by_reset_token, update_user_password, create_atividade, 
                    get_all_atividades, get_atividades_by_setor, Atividade, db)
+import logging
 
 auth_blueprint = Blueprint('auth', __name__)
 
@@ -78,6 +79,10 @@ def index():
         flash('Por favor, faça login para acessar esta página', 'warning')
         return redirect(url_for('auth.login'))
     
+    # Get pagination parameters
+    page = request.args.get('page', 1, type=int)
+    per_page = 10  # 10 tasks per page
+    
     # Get the current user object
     from models import User, Setor
     user = User.query.get(session['user_id'])
@@ -89,15 +94,24 @@ def index():
         user_setor = Setor.query.get(user.setor_id)
         if user_setor:
             user_setor_nome = user_setor.nome
-            # Get tasks that match the user's setor name
-            atividades = get_atividades_by_setor(user_setor.nome)
+            # Get paginated tasks that match the user's setor name
+            pagination = get_atividades_by_setor(user_setor.nome, page=page, per_page=per_page)
         else:
-            atividades = []
+            # Create empty pagination object
+            from sqlalchemy import text
+            empty_query = db.session.query(text('1')).filter(text('1=0'))
+            pagination = empty_query.paginate(page=page, per_page=per_page, error_out=False)
     else:
-        # For tipo 1 users, show all tasks
-        atividades = get_all_atividades()
+        # For tipo 1 users, show all tasks with pagination
+        pagination = get_all_atividades(page=page, per_page=per_page)
     
-    return render_template('index.html', atividades=atividades, user=user, user_setor=user_setor_nome)
+    atividades = pagination.items
+    
+    return render_template('index.html', 
+                         atividades=atividades, 
+                         pagination=pagination,
+                         user=user, 
+                         user_setor=user_setor_nome)
 
 @auth_blueprint.route('/new-task', methods=['GET', 'POST'])
 def new_task():
@@ -172,7 +186,8 @@ def new_task():
                             'message': f'Nova tarefa criada por {solicitante} no setor {setor}'
                         }, room='admin_room')
                 except Exception as socket_error:
-                    print(f"Error sending WebSocket notification: {socket_error}")
+                    from flask import current_app
+                    current_app.logger.warning(f"Error sending WebSocket notification: {socket_error}")
             
             flash('Atividade criada com sucesso!', 'success')
             return redirect(url_for('auth.index'))
@@ -238,7 +253,8 @@ def update_status(atividade_id, new_status):
                         'message': f'Atividade "{atividade.descricao[:50]}..." foi atualizada para "{new_status}"'
                     }, room=setor_room)
         except Exception as socket_error:
-            print(f"Error sending WebSocket notification: {socket_error}")
+            from flask import current_app
+            current_app.logger.warning(f"Error sending WebSocket notification: {socket_error}")
         
         flash(f'Status da atividade atualizado para "{new_status}" com sucesso!', 'success')
     except Exception as e:
@@ -351,13 +367,15 @@ def reset_password(token):
 def send_reset_email(email, token):
     """Send password reset email"""
     from flask import current_app
+    
+    # Get logger
+    logger = current_app.logger
+    
     try:
-        print(f"Attempting to send email to: {email}")
-        print(f"SMTP Server: {current_app.config['MAIL_SERVER']}")
-        print(f"SMTP Port: {current_app.config['MAIL_PORT']}")
-        print(f"SMTP TLS: {current_app.config.get('MAIL_USE_TLS')}")
-        print(f"SMTP SSL: {current_app.config.get('MAIL_USE_SSL')}")
-        print(f"SMTP Username: {current_app.config['MAIL_USERNAME']}")
+        logger.info(f"Attempting to send password reset email to: {email}")
+        logger.debug(f"SMTP Server: {current_app.config['MAIL_SERVER']}")
+        logger.debug(f"SMTP Port: {current_app.config['MAIL_PORT']}")
+        logger.debug("SMTP configuration loaded successfully")
 
         msg = Message(
             subject='Password Reset Request',
@@ -385,20 +403,16 @@ def send_reset_email(email, token):
         <p>If you did not make this request, please ignore this email.</p>
         """
         
-        print("Testing SMTP connection...")
+        logger.debug("Testing SMTP connection...")
         with mail.connect() as conn:
-            print("SMTP connection successful, sending email...")
+            logger.debug("SMTP connection successful, sending email...")
             conn.send(msg)
-        print(f"✅ Password reset email sent successfully to {email}")
-        print(f"Reset URL: {reset_url}")
+        logger.info(f"Password reset email sent successfully to: {email}")
+        # Password reset URL logging removed for security
         return True
     except Exception as e:
-        print(f"❌ Error sending email: {e}")
-        print(f"Error type: {type(e).__name__}")
-        # For development/fallback, always print the reset URL to console
-        reset_url = url_for('auth.reset_password', token=token, _external=True)
-        print(f"\n{'='*60}")
-        print(f"PASSWORD RESET URL (copy this link):")
-        print(f"{reset_url}")
-        print(f"{'='*60}\n")
+        logger.error(f"Error sending password reset email to {email}: {e}")
+        logger.debug(f"Error type: {type(e).__name__}")
+        # For security reasons, password reset URLs are not logged to console in production
+        # If email fails, users should use the forgot password form again
         return False

@@ -87,14 +87,23 @@ def create_atividade(descricao, status, prioridade, user_id, prazo=None, local=N
     db.session.commit()
     return atividade
 
-def get_all_atividades():
-    """Get all atividades with creator info"""
+def get_all_atividades(page=1, per_page=10):
+    """Get all atividades with creator info, with pagination and custom ordering"""
     from sqlalchemy.orm import aliased
+    from sqlalchemy import case
     
     # Create alias for the User table (only for creator now)
     CriadorUser = aliased(User)
     
-    return db.session.query(
+    # Define status priority order: 'em andamento' > 'pendente' > others, 'concluído' last
+    status_order = case(
+        (Atividade.status == 'Concluída', 3),  # Concluído always last
+        (Atividade.status == 'Em andamento', 1),  # Em andamento first
+        (Atividade.status == 'Pendente', 2),  # Pendente second
+        else_=2  # Other statuses with pendente
+    )
+    
+    query = db.session.query(
         Atividade.id,
         Atividade.descricao,
         Atividade.status,
@@ -108,16 +117,31 @@ def get_all_atividades():
         Atividade.atendente
     ).join(
         CriadorUser, Atividade.user_id == CriadorUser.id
-    ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
+    ).order_by(
+        db.func.isnull(Atividade.prazo),  # NULL prazo last
+        Atividade.prazo.asc(),  # Order by prazo first
+        status_order  # Then by status priority
+    )
+    
+    return query.paginate(page=page, per_page=per_page, error_out=False)
 
-def get_atividades_by_setor(setor_nome):
-    """Get all atividades filtered by setor name"""
+def get_atividades_by_setor(setor_nome, page=1, per_page=10):
+    """Get all atividades filtered by setor name, with pagination and custom ordering"""
     from sqlalchemy.orm import aliased
+    from sqlalchemy import case
     
     # Create alias for the User table (only for creator now)
     CriadorUser = aliased(User)
     
-    return db.session.query(
+    # Define status priority order: 'em andamento' > 'pendente' > others, 'concluído' last
+    status_order = case(
+        (Atividade.status == 'Concluída', 3),  # Concluído always last
+        (Atividade.status == 'Em andamento', 1),  # Em andamento first
+        (Atividade.status == 'Pendente', 2),  # Pendente second
+        else_=2  # Other statuses with pendente
+    )
+    
+    query = db.session.query(
         Atividade.id,
         Atividade.descricao,
         Atividade.status,
@@ -133,7 +157,13 @@ def get_atividades_by_setor(setor_nome):
         CriadorUser, Atividade.user_id == CriadorUser.id
     ).filter(
         Atividade.setor == setor_nome
-    ).order_by(db.func.isnull(Atividade.prazo), Atividade.prazo.asc()).all()
+    ).order_by(
+        db.func.isnull(Atividade.prazo),  # NULL prazo last
+        Atividade.prazo.asc(),  # Order by prazo first
+        status_order  # Then by status priority
+    )
+    
+    return query.paginate(page=page, per_page=per_page, error_out=False)
 
 def get_user_by_username(username):
     return User.query.filter_by(username=username).first()
