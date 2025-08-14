@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Gestor de Tarefas - Task Management System
+Developed by Lucas Brito Marinho
+Copyright (c) 2025
+
+A web-based task management system built with Flask
+Features: User authentication, task management, real-time notifications, role-based access
+"""
+
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, emit, join_room
 from auth import auth_blueprint, mail
@@ -76,6 +86,13 @@ def on_join_setor_room(data):
         setor_room = f"setor_{setor}"
         join_room(setor_room)
         emit('status', {'msg': f'Joined sector room: {setor_room}'})
+
+# Favicon route
+@app.route('/favicon.ico')
+def favicon():
+    from flask import send_from_directory
+    return send_from_directory(os.path.join(app.root_path, 'static', 'images'), 
+                              'brasao.svg', mimetype='image/svg+xml')
 
 # Error handlers
 @app.errorhandler(404)

@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Módulo de Autenticação - Gestor de Tarefas
+Desenvolvido por Lucas Brito Marinho
+Copyright (c) 2025
+
+Gerencia autenticação de usuários, registro, gerenciamento de senhas,
+gestão de tarefas com controle de acesso baseado em papéis e notificações em tempo real
+"""
+
 from flask import Blueprint, request, render_template, redirect, url_for, session, flash
 from flask_mail import Mail, Message
 from flask_socketio import emit

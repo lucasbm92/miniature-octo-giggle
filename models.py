@@ -1,3 +1,13 @@
+#!/usr/bin/env python3
+"""
+Modelos de Banco de Dados - Gestor de Tarefas
+Desenvolvido por Lucas Brito Marinho
+Copyright (c) 2025
+
+Modelos de banco de dados e funções utilitárias para o sistema de gerenciamento de tarefas
+Inclui os modelos User, Setor, Atividade e funções relacionadas
+"""
+
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.security import generate_password_hash, check_password_hash
 from markupsafe import escape

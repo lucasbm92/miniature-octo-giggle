@@ -226,7 +226,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 👨‍💻 Author
 
-**Lucas B Marinho** - [lucasbm92](https://github.com/lucasbm92)
+**Lucas Brito Marinho** - [lucasbm92](https://github.com/lucasbm92)
 
 ## 🙏 Acknowledgments
 
