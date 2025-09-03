@@ -113,5 +113,4 @@ logs/
 
 .venv/
 
-migrate_db.py
 migrate_fields.py
