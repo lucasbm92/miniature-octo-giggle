@@ -34,7 +34,6 @@ Uma aplicação web de gerenciamento de tarefas baseada em Flask que oferece aut
 - **Segurança**: Hash de senha com Werkzeug, gerenciamento de sessão
 - **Deploy**: Pronto para Gunicorn WSGI
 
-
 ## 📋 Requisitos
 
 - Python 3.7+
@@ -55,15 +54,14 @@ pip install -r requirements.txt
 ```
 
 ### 3. Configure o Ambiente
+#3.1 Copie o arquivo de exemplo de ambiente
 ```bash
-# Copie o arquivo de exemplo de ambiente
 copy .env.example .env
-
-# Edite o .env com suas configurações:
+```
+#3.2 Edite o .env com suas configurações:
 # - Gere SECRET_KEY: python -c "import secrets; print(secrets.token_hex(32))"
 # - Atualize as credenciais do banco de dados
 # - Configure as opções de e-mail
-```
 
 ### 4. Configure o Banco de Dados
 ```bash

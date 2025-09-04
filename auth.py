@@ -314,7 +314,7 @@ def change_password():
             return redirect(url_for('auth.change_password'))
         
         if new_password != confirm_password:
-            flash('As novas senhas não coincidem', 'error')
+            flash('Senha e confirmação de senha não coincidem', 'error')
             return redirect(url_for('auth.change_password'))
         
         if len(new_password) < 6:
@@ -325,7 +325,11 @@ def change_password():
         flash('Senha alterada com sucesso!', 'success')
         return redirect(url_for('auth.index'))
     
-    return render_template('change_password.html')
+    # Get current user to pass to template
+    from models import User
+    current_user = User.query.get(session['user_id'])
+    
+    return render_template('change_password.html', username=session.get('username'), user=current_user)
 
 @auth_blueprint.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():

@@ -128,4 +128,4 @@ if __name__ == '__main__':
     print("Starting Gestor de Tarefas")
     print("Access at: http://localhost:5000 or http://YOUR_IP:5000")
     
-    socketio.run(app, host='0.0.0.0', port=5000, debug=False)
+    socketio.run(app, host='0.0.0.0', port=5000, debug=True)

@@ -1,104 +1,128 @@
-<!DOCT    <meta name="description" content="Cadastro - Sistema de Gestão de Tarefas desenvolvido por Lucas Brito Marinho">
-    <title>Cadastro - Gestor de Tarefas | Lucas Brito Marinho</title>
+<!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Lucas Brito Marinho">
-    <meta name="description" content="Cadastro - Registre-se no Sistema de Gestão de Tarefas">
-    <title>Cadastro - Gestor de Tarefas | Lucas Brito Marinho</title>
+    <meta name="description" content="Cadastro - Cadastro de novos usuários">
+    <title>Cadastro - Gestor de Tarefas</title>
     <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/brasao.svg') }}">
     <link rel="apple-touch-icon" href="{{ url_for('static', filename='images/brasao.svg') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input[type="text"], input[type="email"], input[type="password"], select { 
-            width: 300px; 
-            padding: 8px; 
-            margin-bottom: 10px; 
-        }
-        select {
-            width: 316px; /* Slightly wider to account for dropdown arrow */
-        }
-        button { 
-            padding: 10px 20px; 
-            background-color: #007bff; 
-            color: white; 
-            border: none; 
-            cursor: pointer; 
-        }
-        button:hover { background-color: #0056b3; }
-    </style>
 </head>
+
 <body>
-    <h2>Cadastro</h2>
-    
-    <!-- Display flash messages -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            {% for category, message in messages %}
-                {% if category == 'error' %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {% elif category == 'success' %}
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {% elif category == 'warning' %}
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                {% elif category == 'info' %}
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('auth.index') }}">
+                <img src="{{ url_for('static', filename='images/brasao.svg') }}" alt="Logo" style="height: 36px; width: auto; margin-right: 10px;">
+                Gestor de Tarefas
+            </a>
+            <div class="navbar-nav ms-auto">
+                {% if username %}
+                    <span class="navbar-text me-3">Bem-vindo, {{ username }}!</span>
+                    <a class="nav-link" href="{{ url_for('auth.change_password') }}">Change Password</a>
+                    <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
                 {% else %}
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                    <a class="nav-link" href="{{ url_for('auth.register') }}">Cadastre-se</a>
                 {% endif %}
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
-    {% endwith %}
-    
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="mb-0">Cadastro</h3>
+                    </div>
+                    <div class="card-body">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    {% if category == 'error' %}
+                                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    {% elif category == 'success' %}
+                                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                                    {% elif category == 'warning' %}
+                                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                                    {% elif category == 'info' %}
+                                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {% else %}
+                                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                                    {% endif %}
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
     <form method="post">
-        <div class="form-group">
-            <label>Usuário:</label>
-            <input type="text" name="username" required>
-            <small class="form-text text-muted">Nome de exibição (não usado para login)</small>
-        </div>
-        
-        <div class="form-group">
-            <label>Email:</label>
-            <input type="email" name="email" required>
-            <small class="form-text text-muted">Use este e-mail para fazer login</small>
-        </div>
-        
-        <div class="form-group">
-            <label>Setor:</label>
-            <select name="setor_id" required style="width: 316px; padding: 8px; margin-bottom: 10px;">
-                <option value="">Selecione seu setor</option>
-                {% for setor in setores %}
-                    <option value="{{ setor.id }}">{{ setor.nome }}</option>
-                {% endfor %}
-            </select>
-            <small class="form-text text-muted">Selecione o setor onde você trabalha</small>
-        </div>
-        
-        <div class="form-group">
-            <label>Senha:</label>
-            <input type="password" name="password" required>
-        </div>
-        
-        <div class="form-group">
-            <label>Confirmar Senha:</label>
-            <input type="password" name="confirm_password" required>
-        </div>
-        
-        <button type="submit">Registrar</button>
-    </form>
-    <br>
-    <a href="/login">Já tem uma conta? Faça login</a>
-    
-    <div class="text-center mt-5">
-        <small class="text-muted">Desenvolvido por <strong>Lucas Brito Marinho</strong> &copy; 2025</small>
+
+
+    <div class="mb-3">
+        <label for="username" class="form-label">Nome de usuário</label>
+        <input type="text" class="form-control" id="username" name="username" placeholder="Seu nome">
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
+    <div class="mb-3">
+        <label for="email" class="form-label">E-mail</label>
+        <input type="text" class="form-control" id="email" name="email" placeholder="Endereço de e-mail">
+    </div>
+  
+    <div class="mb-3">
+        <label for="setor" class="form-label">Setor</label>
+        <select class="form-select" id="setor" name="setor_id" required>
+            <option value="">Selecione seu setor</option>
+            {% for setor in setores %}
+                <option value="{{ setor.id }}">{{ setor.nome }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div class="mb-3">
+        <label for="password" class="form-label">Senha</label>
+        <input type="password" class="form-control" id="password" name="password" placeholder="Senha">
+    </div>
+
+    <div class="mb-3">
+        <label for="confirm_password" class="form-label">Confirmação de senha</label>
+        <input type="password" class="form-control" id="confirm_password" name="confirm_password" placeholder="Confirmação de senha">
+    </div>
+
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+        <a href="{{ url_for('auth.login') }}" class="btn btn-secondary me-md-2">Cancelar</a>
+        <button type="submit" class="btn btn-primary">Enviar</button>
+    </div>
+
+</form>
+                                                <!-- Close card-body, card, col-md-8, row, container -->
+                                        </div> <!-- card-body -->
+                                </div> <!-- card -->
+                        </div> <!-- col-md-8 -->
+                </div> <!-- row -->
+        </div> <!-- container -->
+
+<!-- Footer -->
+<footer class="bg-dark text-light py-3 mt-5">
+    <div class="container text-center">
+        <p class="mb-1">
+            <strong>Gestor de Tarefas</strong> - Sistema de Gestão de Atividades
+        </p>
+        <p class="mb-0">
+            Desenvolvido por <strong>Lucas Brito Marinho</strong> &copy; 2025
+        </p>
+        <small class="text-muted">
+            Tecnologias: Flask, Python, MySQL, Bootstrap, WebSocket
+        </small>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>
