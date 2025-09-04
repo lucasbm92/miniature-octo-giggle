@@ -340,17 +340,19 @@ def forgot_password():
     if request.method == 'POST':
         email = request.form['email']
         user = get_user_by_email(email)
-        
+
         if user:
             token = user.generate_reset_token()
             send_reset_email(user.email, token)
-            flash('Instruções para redefinir a senha foram enviadas para seu email.', 'info')
+            flash('Instruções para redefinição de senha foram enviadas para seu email.', 'primary')
+            return redirect(url_for('auth.login'))
         else:
             flash('Email não encontrado.', 'error')
-        
-        return redirect(url_for('auth.login'))
-    
-    return render_template('forgot_password.html')
+            username = None
+            return render_template('forgot_password.html', username=username)
+
+    username = session.get('username') if 'username' in session else None
+    return render_template('forgot_password.html', username=username)
 
 @auth_blueprint.route('/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):

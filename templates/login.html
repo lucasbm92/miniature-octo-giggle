@@ -40,7 +40,9 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                    {% if category == 'error' %}
+                    {% if category == 'primary' %}
+                        <div class="alert alert-primary alert-dismissible fade show" role="alert">
+                    {% elif category == 'error' %}
                         <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {% elif category == 'success' %}
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
