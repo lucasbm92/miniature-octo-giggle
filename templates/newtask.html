@@ -2,6 +2,25 @@
     <title>Nova Tarefa - Gestor de Tarefas | Lucas Brito Marinho</title>
 <html lang="pt-br">
 <head>
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex: 1;
+        }
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="author" content="Lucas Brito Marinho">
@@ -30,6 +49,8 @@
             </div>
         </div>
     </nav>
+
+    <main>
 
     <div class="container mt-5">
         <div class="row justify-content-center">
@@ -112,6 +133,8 @@
         </div>
     </div>
 
+    </main>
+    
     <!-- Footer -->
     <footer class="bg-dark text-light py-3 mt-5">
         <div class="container text-center">
