@@ -226,15 +226,25 @@ def update_status(atividade_id, new_status):
         # Set prazo when moving from Pendente to Em andamento
         if atividade.status == 'Pendente' and new_status == 'Em andamento':
             from datetime import datetime, timedelta
-            # Set prazo based on prioridade
+            # Helper to add days skipping weekends
+            def add_days_skip_weekends(start_date, days):
+                date = start_date
+                added = 0
+                while added < days:
+                    date += timedelta(days=1)
+                    if date.weekday() < 5:  # 0=Monday, 4=Friday
+                        added += 1
+                return date
+
+            # Set prazo based on prioridade, skipping weekends
             if atividade.prioridade == 'Baixa':
-                atividade.prazo = datetime.now() + timedelta(days=15)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 15)
             elif atividade.prioridade == 'Média':
-                atividade.prazo = datetime.now() + timedelta(days=10)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 10)
             elif atividade.prioridade == 'Alta':
-                atividade.prazo = datetime.now() + timedelta(days=5)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 5)
             elif atividade.prioridade == 'Crítica':
-                atividade.prazo = datetime.now() + timedelta(days=2)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 2)
             # Set atendente to current user's username
             current_user = User.query.get(session['user_id'])
             if current_user:
