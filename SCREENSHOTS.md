@@ -2,6 +2,9 @@
 
 Este documento reúne capturas de tela das principais páginas e funcionalidades do sistema Gestor de Tarefas.
 
+### README
+👉 https://github.com/lucasbm92/miniature-octo-giggle/blob/main/README.md
+
 ## 1. Tela de Login
 
 ![Login](screenshots/login.png)

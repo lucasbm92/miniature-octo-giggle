@@ -25,6 +25,9 @@ Uma aplicação web de gerenciamento de tarefas baseada em Flask que oferece aut
 - **Navegação Intuitiva** - Interface limpa e fácil de usar
 - **Acesso em Rede** - Suporte multiusuário na rede local
 
+### Screenshots
+👉 https://github.com/lucasbm92/miniature-octo-giggle/blob/main/SCREENSHOTS.md
+
 ## 🛠️ Tecnologias Utilizadas
 
 - **Backend**: Python Flask
