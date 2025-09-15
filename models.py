@@ -105,14 +105,26 @@ def get_all_atividades(page=1, per_page=10):
     # Create alias for the User table (only for creator now)
     CriadorUser = aliased(User)
     
-    # Define status priority order: 'em andamento' > 'pendente' > others, 'concluído' last
+    # Define status order: 'Concluída' always last
     status_order = case(
-        (Atividade.status == 'Concluída', 3),  # Concluído always last
-        (Atividade.status == 'Em andamento', 1),  # Em andamento first
-        (Atividade.status == 'Pendente', 2),  # Pendente second
-        else_=2  # Other statuses with pendente
+        (Atividade.status == 'Concluída', 2),  # Concluída last
+        else_=1  # Others first
     )
-    
+    # Define priority order: Crítica > Alta > Média > Baixa
+    prioridade_order = case(
+        (Atividade.prioridade == 'Crítica', 1),
+        (Atividade.prioridade == 'Alta', 2),
+        (Atividade.prioridade == 'Média', 3),
+        (Atividade.prioridade == 'Baixa', 4),
+        else_=5
+    )
+    # For status within non-concluída: Em andamento > Pendente > others
+    status_detail_order = case(
+        (Atividade.status == 'Em andamento', 1),
+        (Atividade.status == 'Pendente', 2),
+        else_=3
+    )
+
     query = db.session.query(
         Atividade.id,
         Atividade.descricao,
@@ -128,11 +140,13 @@ def get_all_atividades(page=1, per_page=10):
     ).join(
         CriadorUser, Atividade.user_id == CriadorUser.id
     ).order_by(
-        db.func.isnull(Atividade.prazo),  # NULL prazo last
-        Atividade.prazo.asc(),  # Order by prazo first
-        status_order  # Then by status priority
+        status_order,           # Concluída last
+        prioridade_order,       # Priority order
+        db.func.isnull(Atividade.prazo), # NULL prazo last
+        Atividade.prazo.asc(),   # Earlier prazo first
+        status_detail_order    # Status order within non-concluída
     )
-    
+
     return query.paginate(page=page, per_page=per_page, error_out=False)
 
 def get_atividades_by_setor(setor_nome, page=1, per_page=10):
