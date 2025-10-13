@@ -238,11 +238,11 @@ def update_status(atividade_id, new_status):
 
             # Set prazo based on prioridade, skipping weekends
             if atividade.prioridade == 'Baixa':
-                atividade.prazo = add_days_skip_weekends(datetime.now(), 15)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 14)
             elif atividade.prioridade == 'Média':
-                atividade.prazo = add_days_skip_weekends(datetime.now(), 10)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 9)
             elif atividade.prioridade == 'Alta':
-                atividade.prazo = add_days_skip_weekends(datetime.now(), 5)
+                atividade.prazo = add_days_skip_weekends(datetime.now(), 4)
             elif atividade.prioridade == 'Crítica':
                 atividade.prazo = add_days_skip_weekends(datetime.now(), 2)
             # Set atendente to current user's username
