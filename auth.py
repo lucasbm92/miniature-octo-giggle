@@ -473,3 +473,102 @@ def send_reset_email(email, token):
         # For security reasons, password reset URLs are not logged to console in production
         # If email fails, users should use the forgot password form again
         return False
+
+@auth_blueprint.route('/pendentes')
+def pendentes():
+    if 'user_id' not in session:
+        flash('Por favor, faça login para acessar esta página', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    from models import User, Setor
+    user = User.query.get(session['user_id'])
+    
+    user_setor_nome = None
+    if user and getattr(user, 'tipo', None) == 2:
+        user_setor = Setor.query.get(user.setor_id)
+        if user_setor:
+            user_setor_nome = user_setor.nome
+            # Get paginated tasks for this setor with status 'Pendente'
+            query = Atividade.query.filter_by(setor=user_setor.nome, status='Pendente').paginate(page=page, per_page=per_page, error_out=False)
+        else:
+            query = Atividade.query.filter_by(status='Pendente').paginate(page=page, per_page=per_page, error_out=False)
+    else:
+        # For tipo 1 users, show all pending tasks
+        query = Atividade.query.filter_by(status='Pendente').paginate(page=page, per_page=per_page, error_out=False)
+    
+    atividades = query.items
+    
+    return render_template('pendentes.html', 
+                         atividades=atividades, 
+                         pagination=query,
+                         user=user, 
+                         user_setor=user_setor_nome)
+
+@auth_blueprint.route('/em-andamento')
+def em_andamento():
+    if 'user_id' not in session:
+        flash('Por favor, faça login para acessar esta página', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    from models import User, Setor
+    user = User.query.get(session['user_id'])
+    
+    user_setor_nome = None
+    if user and getattr(user, 'tipo', None) == 2:
+        user_setor = Setor.query.get(user.setor_id)
+        if user_setor:
+            user_setor_nome = user_setor.nome
+            # Get paginated tasks for this setor with status 'Em andamento'
+            query = Atividade.query.filter_by(setor=user_setor.nome, status='Em andamento').paginate(page=page, per_page=per_page, error_out=False)
+        else:
+            query = Atividade.query.filter_by(status='Em andamento').paginate(page=page, per_page=per_page, error_out=False)
+    else:
+        # For tipo 1 users, show all in-progress tasks
+        query = Atividade.query.filter_by(status='Em andamento').paginate(page=page, per_page=per_page, error_out=False)
+    
+    atividades = query.items
+    
+    return render_template('em_andamento.html', 
+                         atividades=atividades, 
+                         pagination=query,
+                         user=user, 
+                         user_setor=user_setor_nome)
+
+@auth_blueprint.route('/concluido')
+def concluido():
+    if 'user_id' not in session:
+        flash('Por favor, faça login para acessar esta página', 'warning')
+        return redirect(url_for('auth.login'))
+    
+    page = request.args.get('page', 1, type=int)
+    per_page = 10
+    
+    from models import User, Setor
+    user = User.query.get(session['user_id'])
+    
+    user_setor_nome = None
+    if user and getattr(user, 'tipo', None) == 2:
+        user_setor = Setor.query.get(user.setor_id)
+        if user_setor:
+            user_setor_nome = user_setor.nome
+            # Get paginated tasks for this setor with status 'Concluída'
+            query = Atividade.query.filter_by(setor=user_setor.nome, status='Concluída').paginate(page=page, per_page=per_page, error_out=False)
+        else:
+            query = Atividade.query.filter_by(status='Concluída').paginate(page=page, per_page=per_page, error_out=False)
+    else:
+        # For tipo 1 users, show all completed tasks
+        query = Atividade.query.filter_by(status='Concluída').paginate(page=page, per_page=per_page, error_out=False)
+    
+    atividades = query.items
+    
+    return render_template('concluido.html', 
+                         atividades=atividades, 
+                         pagination=query,
+                         user=user, 
+                         user_setor=user_setor_nome)

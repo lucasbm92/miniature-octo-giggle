@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <style>
+        html, body {
+            height: 100%;
+        }
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        main {
+            flex: 1;
+        }
+        footer {
+            position: relative;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="author" content="Lucas Brito Marinho">
+    <meta name="description" content="Sistema de Gestão de Tarefas para organização e controle de atividades">
+    <meta name="keywords" content="gestão de tarefas, tasks, sistema web, Lucas Brito Marinho">
+    <title>Tarefas Em Andamento - Gestor de Tarefas</title>
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/brasao.svg') }}">
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('auth.index') }}">
+                <img src="{{ url_for('static', filename='images/brasao.svg') }}" alt="Logo" style="height: 36px; width: auto; margin-right: 10px;">
+                Gestor de Tarefas
+            </a>
+            <div class="navbar-nav ms-auto">
+                {% if user %}
+                    <span class="navbar-text me-3">Bem-vindo, {{ user.username }}!</span>
+                    <a class="nav-link" href="{{ url_for('auth.change_password') }}">Alterar Senha</a>
+                    <a class="nav-link" href="{{ url_for('auth.logout') }}">Logout</a>
+                {% else %}
+                    <a class="nav-link" href="{{ url_for('auth.login') }}">Login</a>
+                    <a class="nav-link" href="{{ url_for('auth.register') }}">Register</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <main>
+
+    <div class="container mt-5">
+        <!-- Status Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.index') }}">Todas</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.pendentes') }}">Pendentes</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="{{ url_for('auth.em_andamento') }}">Em andamento</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.concluido') }}">Concluídas</a>
+            </li>
+        </ul>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    {% if category == 'error' %}
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {% elif category == 'success' %}
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    {% elif category == 'warning' %}
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    {% elif category == 'info' %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    {% else %}
+                        <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    {% endif %}
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <div class="container ml-5">
+        <h2>Tarefas Em Andamento</h2>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th scope="col">Descrição</th>
+                    <th scope="col">Local</th>
+                    <th scope="col">Setor</th>
+                    <th scope="col">Criado por</th>
+                    <th scope="col">Solicitante</th>
+                    <th scope="col">Atendente</th>
+                    <th scope="col">Prioridade</th>
+                    <th scope="col">Data criada</th>
+                    <th scope="col">Prazo</th>
+                    <th scope="col">Status</th>
+                    {% if user.tipo == 1 %}
+                        <th scope="col">Ações</th>
+                    {% endif %}
+                    <th scope="col"><a href="{{ url_for('auth.new_task') }}" class="btn btn-primary btn-sm">Criar</a></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if atividades %}
+                    {% for atividade in atividades %}
+                        <tr data-atividade-id="{{ atividade.id }}">
+                            <td>{{ atividade.descricao }}</td>
+                            <td>{{ atividade.local or 'Não especificado' }}</td>
+                            <td>{{ atividade.setor or '-' }}</td>
+                            <td>{{ atividade.criado_por_nome }}</td>
+                            <td>{{ atividade.solicitante or 'Não atribuído' }}</td>
+                            <td>{{ atividade.atendente or '-' }}</td>
+                            <td>
+                                {% if atividade.prioridade == 'Baixa' %}
+                                    <span class="badge bg-success">{{ atividade.prioridade }}</span>
+                                {% elif atividade.prioridade == 'Média' %}
+                                    <span class="badge bg-info">{{ atividade.prioridade }}</span>
+                                {% elif atividade.prioridade == 'Alta' %}
+                                    <span class="badge bg-warning">{{ atividade.prioridade }}</span>
+                                {% elif atividade.prioridade == 'Crítica' %}
+                                    <span class="badge bg-danger">{{ atividade.prioridade }}</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ atividade.data_criada.strftime('%d/%m/%Y') if atividade.data_criada else '' }}</td>
+                            <td>{{ atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definido' }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ atividade.status }}</span>
+                            </td>
+                            {% if user.tipo == 1 %}
+                                <td>
+                                    <a href="{{ url_for('auth.update_status', atividade_id=atividade.id, new_status='Concluída') }}" class="btn btn-sm btn-success">Concluir</a>
+                                    <a href="{{ url_for('auth.delete_atividade', atividade_id=atividade.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')">Excluir</a>
+                                </td>
+                            {% endif %}
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="11" class="text-center text-muted">
+                            <p class="my-3">Nenhuma atividade em andamento encontrada.</p>
+                            <a href="{{ url_for('auth.new_task') }}" class="btn btn-primary">Criar primeira atividade</a>
+                        </td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+        
+        <!-- Pagination Controls -->
+        {% if pagination and pagination.pages > 1 %}
+        <nav aria-label="Task pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <!-- First Page -->
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.em_andamento', page=1) }}" aria-label="First">
+                            <span aria-hidden="true">&laquo;&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;&laquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Previous Page -->
+                {% if pagination.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.em_andamento', page=pagination.prev_num) }}" aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&laquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Page Numbers -->
+                {% for page_num in pagination.iter_pages(left_edge=1, right_edge=1, left_current=1, right_current=2) %}
+                    {% if page_num %}
+                        {% if page_num != pagination.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('auth.em_andamento', page=page_num) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active" aria-current="page">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">…</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                <!-- Next Page -->
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.em_andamento', page=pagination.next_num) }}" aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;</span>
+                    </li>
+                {% endif %}
+                
+                <!-- Last Page -->
+                {% if pagination.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('auth.em_andamento', page=pagination.pages) }}" aria-label="Last">
+                            <span aria-hidden="true">&raquo;&raquo;</span>
+                        </a>
+                    </li>
+                {% else %}
+                    <li class="page-item disabled">
+                        <span class="page-link" aria-hidden="true">&raquo;&raquo;</span>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        
+        <!-- Pagination Info -->
+        {% if pagination %}
+        <div class="text-center text-muted mt-2">
+            <small>
+                Exibindo {{ ((pagination.page - 1) * pagination.per_page + 1) }} a 
+                {{ pagination.page * pagination.per_page if pagination.page * pagination.per_page <= pagination.total else pagination.total }} 
+                de {{ pagination.total }} tarefas
+            </small>
+        </div>
+        {% endif %}
+        {% endif %}
+    </div>
+
+    </main>
+    <footer class="bg-dark text-light text-center py-3 mt-5">
+        <p>
+            <small>&copy; 2025 Lucas Brito Marinho. Todos os direitos reservados.</small>
+        </p>
+        <p>
+            <small class="text-muted">
+                Tecnologias: Flask, Python, MySQL, Bootstrap, WebSocket
+            </small>
+        </p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/bootstrap.bundle.min.js') }}"></script>
+</body>
+</html>

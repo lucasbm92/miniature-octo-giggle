@@ -78,6 +78,23 @@
         {% endwith %}
     </div>
 
+    <div class="container mt-4">
+        <ul class="nav nav-tabs mb-4" role="tablist">
+            <li class="nav-item" role="presentation">
+                <a class="nav-link active" href="{{ url_for('auth.index') }}">Todas</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.pendentes') }}">Pendentes</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.em_andamento') }}">Em andamento</a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link" href="{{ url_for('auth.concluido') }}">Concluídas</a>
+            </li>
+        </ul>
+    </div>
+
     <div class="container ml-5">
         <table class="table table-hover">
             <thead>
