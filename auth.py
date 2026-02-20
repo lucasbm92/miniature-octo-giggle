@@ -162,11 +162,42 @@ def new_task():
             return redirect(url_for('auth.new_task'))
         
         try:
+            # Determine status from checkbox: create as 'Pendente' if checked, otherwise default to 'Em andamento'
+            status = 'Pendente' if request.form.get('in_progress') else 'Em andamento'
+
+            # For users tipo==2 always create tasks as 'Pendente' regardless of checkbox
+            if current_user and getattr(current_user, 'tipo', None) == 2:
+                status = 'Pendente'
+
+            # Compute prazo when creating as 'Em andamento' (skip weekends)
+            prazo = None
+            if status == 'Em andamento':
+                from datetime import datetime, timedelta
+                def add_days_skip_weekends(start_date, days):
+                    d = start_date
+                    added = 0
+                    while added < days:
+                        d = d + timedelta(days=1)
+                        if d.weekday() < 5:  # Monday=0 .. Friday=4
+                            added += 1
+                    return d
+
+                # Map prioridade to days (same logic used in update_status)
+                if prioridade == 'Baixa':
+                    prazo = add_days_skip_weekends(datetime.now(), 14)
+                elif prioridade == 'Média' or prioridade == 'Media':
+                    prazo = add_days_skip_weekends(datetime.now(), 9)
+                elif prioridade == 'Alta':
+                    prazo = add_days_skip_weekends(datetime.now(), 4)
+                elif prioridade == 'Crítica':
+                    prazo = add_days_skip_weekends(datetime.now(), 2)
+
             new_atividade = create_atividade(
                 descricao=descricao,
-                status='Pendente',
+                status=status,
                 prioridade=prioridade,
                 user_id=session['user_id'],
+                prazo=prazo,
                 local=local.strip() if local else None,
                 setor=setor.strip() if setor else None,
                 solicitante=solicitante.strip() if solicitante else None
@@ -182,19 +213,19 @@ def new_task():
                         # Send complete data including the new activity ID
                         from datetime import datetime
                         socketio.emit('new_task_notification', {
-                            'atividade_id': new_atividade.id,
-                            'descricao': descricao,
-                            'local': local.strip() if local else 'Não especificado',
-                            'setor': setor.strip() if setor else '-',
-                            'criado_por_nome': current_user.username,
-                            'solicitante': solicitante.strip() if solicitante else 'Não atribuído',
-                            'atendente': '-',
-                            'prioridade': prioridade,
-                            'data_criada': datetime.now().strftime('%d/%m/%Y'),
-                            'prazo': 'Não definido',
-                            'status': 'Pendente',
-                            'message': f'Nova tarefa criada por {solicitante} no setor {setor}'
-                        }, room='admin_room')
+                                'atividade_id': new_atividade.id,
+                                'descricao': descricao,
+                                'local': local.strip() if local else 'Não especificado',
+                                'setor': setor.strip() if setor else '-',
+                                'criado_por_nome': current_user.username,
+                                'solicitante': solicitante.strip() if solicitante else 'Não atribuído',
+                                'atendente': '-',
+                                'prioridade': prioridade,
+                                'data_criada': datetime.now().strftime('%d/%m/%Y'),
+                                'prazo': new_atividade.prazo.strftime('%d/%m/%Y') if new_atividade.prazo else 'Não definido',
+                                'status': new_atividade.status,
+                                'message': f'Nova tarefa criada por {solicitante} no setor {setor}'
+                            }, room='admin_room')
                 except Exception as socket_error:
                     from flask import current_app
                     current_app.logger.warning(f"Error sending WebSocket notification: {socket_error}")
