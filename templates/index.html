@@ -122,9 +122,9 @@
                             <td>{{ atividade.descricao }}</td>
                             <td>{{ atividade.local or 'Não especificado' }}</td>
                             <td>{{ atividade.setor or '-' }}</td>
-                            <td>{{ atividade.criado_por_nome }}</td>
+                            <td>{{ atividade.criado_por.username }}</td>
                             <td>{{ atividade.solicitante or 'Não atribuído' }}</td>
-                            <td>{{ atividade.atendente or '-' }}</td>
+                            <td>{{ atividade.atendente.username if atividade.atendente else '-' }}</td>
                             <td>
                                 {% if atividade.prioridade == 'Baixa' %}
                                     <span class="badge bg-success">{{ atividade.prioridade }}</span>

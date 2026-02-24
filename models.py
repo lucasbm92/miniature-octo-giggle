@@ -62,10 +62,11 @@ class Atividade(db.Model):
     setor = db.Column(db.String(100), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     solicitante = db.Column(db.String(100), nullable=True)
-    atendente = db.Column(db.String(100), nullable=True)
+    atendente_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
     
     # Relationships
     criado_por = db.relationship('User', foreign_keys=[user_id], backref='atividade_criadas')
+    atendente = db.relationship('User', foreign_keys=[atendente_id], backref='atividade_atendidas')
 
 def create_user(username, email, password, setor_id, tipo):
     hashed_password = generate_password_hash(password)
@@ -91,9 +92,11 @@ def create_atividade(descricao, status, prioridade, user_id, prazo=None, local=N
         prazo=prazo,
         local=local,
         setor=setor if setor else None,
-        solicitante=solicitante if solicitante else None
+        solicitante=solicitante if solicitante else None,
+        atendente_id=user_id if status == 'Em andamento' else None
     )
     db.session.add(atividade)
+    db.session.commit()
     db.session.commit()
     return atividade
 
@@ -125,18 +128,13 @@ def get_all_atividades(page=1, per_page=10):
         else_=3
     )
 
-    query = db.session.query(
-        Atividade.id,
-        Atividade.descricao,
-        Atividade.status,
-        Atividade.prioridade,
-        Atividade.data_criada,
-        Atividade.prazo,
-        Atividade.local,
-        Atividade.setor,
-        CriadorUser.username.label('criado_por_nome'),
-        Atividade.solicitante,
-        Atividade.atendente
+    # Return Atividade model instances and eager-load related users so templates can
+    # access `atividade.criado_por.username` and `atividade.atendente.username`.
+    from sqlalchemy.orm import joinedload
+
+    query = Atividade.query.options(
+        joinedload(Atividade.criado_por),
+        joinedload(Atividade.atendente)
     ).join(
         CriadorUser, Atividade.user_id == CriadorUser.id
     ).order_by(
@@ -165,18 +163,11 @@ def get_atividades_by_setor(setor_nome, page=1, per_page=10):
         else_=2  # Other statuses with pendente
     )
     
-    query = db.session.query(
-        Atividade.id,
-        Atividade.descricao,
-        Atividade.status,
-        Atividade.prioridade,
-        Atividade.data_criada,
-        Atividade.prazo,
-        Atividade.local,
-        Atividade.setor,
-        CriadorUser.username.label('criado_por_nome'),
-        Atividade.solicitante,
-        Atividade.atendente
+    from sqlalchemy.orm import joinedload
+
+    query = Atividade.query.options(
+        joinedload(Atividade.criado_por),
+        joinedload(Atividade.atendente)
     ).join(
         CriadorUser, Atividade.user_id == CriadorUser.id
     ).filter(
@@ -186,7 +177,7 @@ def get_atividades_by_setor(setor_nome, page=1, per_page=10):
         Atividade.prazo.asc(),  # Order by prazo first
         status_order  # Then by status priority
     )
-    
+
     return query.paginate(page=page, per_page=per_page, error_out=False)
 
 def get_user_by_username(username):

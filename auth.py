@@ -116,9 +116,103 @@ def index():
         pagination = get_all_atividades(page=page, per_page=per_page)
     
     atividades = pagination.items
-    
+
+    # Normalize items: older queries may return Row objects with labeled columns
+    # while newer code returns Atividade model instances. Convert Row results
+    # into simple objects with the attributes templates expect (criado_por.username,
+    # atendente.username, etc.).
+    from types import SimpleNamespace
+    normalized_atividades = []
+    for a in atividades:
+        # If it's already an Atividade model instance with relationships, keep it
+        if isinstance(a, Atividade):
+            normalized_atividades.append(a)
+            continue
+
+        # Otherwise assume it's a Row-like mapping
+        try:
+            # access by key or attribute
+            descricao = getattr(a, 'descricao', None) or a['descricao']
+        except Exception:
+            descricao = None
+
+        try:
+            local = getattr(a, 'local', None) or a['local']
+        except Exception:
+            local = None
+
+        try:
+            setor = getattr(a, 'setor', None) or a['setor']
+        except Exception:
+            setor = None
+
+        try:
+            solicitante = getattr(a, 'solicitante', None) or a['solicitante']
+        except Exception:
+            solicitante = None
+
+        try:
+            prioridade = getattr(a, 'prioridade', None) or a['prioridade']
+        except Exception:
+            prioridade = None
+
+        try:
+            data_criada = getattr(a, 'data_criada', None) or a['data_criada']
+        except Exception:
+            data_criada = None
+
+        try:
+            prazo = getattr(a, 'prazo', None) or a['prazo']
+        except Exception:
+            prazo = None
+
+        try:
+            status = getattr(a, 'status', None) or a['status']
+        except Exception:
+            status = None
+
+        try:
+            atividade_id = getattr(a, 'id', None) or a['id']
+        except Exception:
+            atividade_id = None
+
+        # created by name may be labeled 'criado_por_nome'
+        criado_por_name = None
+        try:
+            criado_por_name = getattr(a, 'criado_por_nome', None) or a.get('criado_por_nome')
+        except Exception:
+            try:
+                criado_por_name = a['criado_por_nome']
+            except Exception:
+                criado_por_name = None
+
+        # atendente may be available as 'atendente' or 'atividade_atendente'
+        atendente_name = None
+        try:
+            atendente_name = getattr(a, 'atendente', None) or a.get('atendente')
+        except Exception:
+            try:
+                atendente_name = a['atividade_atendente']
+            except Exception:
+                atendente_name = None
+
+        wrapper = SimpleNamespace(
+            id=atividade_id,
+            descricao=descricao,
+            local=local,
+            setor=setor,
+            solicitante=solicitante,
+            prioridade=prioridade,
+            data_criada=data_criada,
+            prazo=prazo,
+            status=status,
+            criado_por=SimpleNamespace(username=criado_por_name if criado_por_name else '-'),
+            atendente=SimpleNamespace(username=atendente_name if atendente_name else None)
+        )
+        normalized_atividades.append(wrapper)
+
     return render_template('index.html', 
-                         atividades=atividades, 
+                         atividades=normalized_atividades, 
                          pagination=pagination,
                          user=user, 
                          user_setor=user_setor_nome)
@@ -276,10 +370,10 @@ def update_status(atividade_id, new_status):
                 atividade.prazo = add_days_skip_weekends(datetime.now(), 4)
             elif atividade.prioridade == 'Crítica':
                 atividade.prazo = add_days_skip_weekends(datetime.now(), 2)
-            # Set atendente to current user's username
+            # Set atendente to current user's id (foreign key)
             current_user = User.query.get(session['user_id'])
             if current_user:
-                atividade.atendente = current_user.username
+                atividade.atendente_id = current_user.id
         atividade.status = new_status
         db.session.commit()
         
@@ -299,7 +393,7 @@ def update_status(atividade_id, new_status):
                         'status': new_status,
                         'prioridade': atividade.prioridade,
                         'setor': atividade.setor,
-                        'atendente': atividade.atendente,
+                        'atendente': atividade.atendente.username if atividade.atendente else '-',
                         'prazo': atividade.prazo.strftime('%d/%m/%Y') if atividade.prazo else 'Não definido',
                         'message': f'Atividade "{atividade.descricao[:50]}..." foi atualizada para "{new_status}"'
                     }, room=setor_room)
